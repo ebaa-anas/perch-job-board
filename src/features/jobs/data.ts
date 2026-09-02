@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/features/auth/session";
 import type { Job } from "@/features/jobs/types";
 
 /**
@@ -72,5 +73,47 @@ export const getJobBySlug = cache(async (slug: string): Promise<Job | null> => {
     .eq("status", "published")
     .maybeSingle();
   if (error) throw new Error(`getJobBySlug: ${error.message}`);
+  return data ? mapJobRow(data as unknown as Row) : null;
+});
+
+/** The signed-in recruiter's own company id, or null. */
+const getOwnCompanyId = cache(async (): Promise<string | null> => {
+  const user = await getUser();
+  if (!user) return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+  return data?.id ?? null;
+});
+
+/** Every job belonging to the recruiter's company — all statuses, newest first. */
+export const getOwnJobs = cache(async (): Promise<Job[]> => {
+  const companyId = await getOwnCompanyId();
+  if (!companyId) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(JOB_SELECT)
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`getOwnJobs: ${error.message}`);
+  return (data as unknown as Row[]).map(mapJobRow);
+});
+
+/** One of the recruiter's own jobs by id (any status), or null if not theirs. */
+export const getOwnJob = cache(async (id: string): Promise<Job | null> => {
+  const companyId = await getOwnCompanyId();
+  if (!companyId) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(JOB_SELECT)
+    .eq("id", id)
+    .eq("company_id", companyId)
+    .maybeSingle();
+  if (error) throw new Error(`getOwnJob: ${error.message}`);
   return data ? mapJobRow(data as unknown as Row) : null;
 });

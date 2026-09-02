@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { pickFreeSlug } from "@/features/companies/slug";
+import { pickFreeSlug } from "@/lib/slug";
 import { slugify } from "@/lib/slug";
 
 describe("pickFreeSlug", () => {
@@ -16,7 +16,7 @@ describe("pickFreeSlug", () => {
   });
 
   it("falls back to a non-empty root", () => {
-    expect(pickFreeSlug("", new Set())).toBe("company");
+    expect(pickFreeSlug("", new Set())).toBe("item");
   });
 });
 

@@ -4,9 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/features/auth/session";
-import { slugify } from "@/lib/slug";
+import { pickFreeSlug, slugify } from "@/lib/slug";
 import { companySchema, type CompanyValues } from "@/features/companies/schema";
-import { pickFreeSlug } from "@/features/companies/slug";
 
 type ActionResult<T> =
   | { ok: true; data: T }
