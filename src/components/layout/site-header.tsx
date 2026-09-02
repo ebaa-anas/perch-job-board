@@ -2,40 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, Briefcase } from "lucide-react";
+import { Bookmark } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserMenu } from "@/components/layout/user-menu";
+import { Wordmark } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 import { useSavedJobs } from "@/features/saved-jobs/saved-jobs-provider";
+import type { SessionProfile } from "@/features/auth/session";
 
-const NAV = [
-  { href: "/jobs", label: "Browse jobs" },
-  { href: "/saved-jobs", label: "Saved" },
-];
-
-export function SiteHeader() {
+export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
   const pathname = usePathname();
   const { count, hydrated } = useSavedJobs();
 
+  const role = profile?.role ?? null;
+  const isSeeker = role === "seeker";
+  const isAuthed = profile != null;
+
+  const nav: { href: string; label: string }[] = [
+    { href: "/jobs", label: "Browse jobs" },
+  ];
+  if (isAuthed && role) nav.push({ href: "/dashboard", label: "Dashboard" });
+  if (isSeeker) nav.push({ href: "/saved-jobs", label: "Saved" });
+  if (role === "recruiter") nav.push({ href: "/company", label: "Company" });
+  if (role === "admin") nav.push({ href: "/admin", label: "Admin" });
+
   const isActive = (href: string) =>
-    href === "/jobs" ? pathname.startsWith("/jobs") && pathname !== "/jobs/create" : pathname === href;
+    href === "/jobs"
+      ? pathname.startsWith("/jobs") && pathname !== "/jobs/create"
+      : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-semibold tracking-tight"
-        >
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-            <Briefcase className="size-4" />
-          </span>
-          <span className="text-[1.05rem]">Perch</span>
+        <Link href="/" aria-label="Perch home">
+          <Wordmark />
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 sm:flex">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -62,23 +68,48 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <Link
-            href="/saved-jobs"
-            aria-label="Saved jobs"
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "icon" }),
-              "relative sm:hidden",
-            )}
-          >
-            <Bookmark className="size-[1.15rem]" />
-            {hydrated && count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground">
-                {count}
-              </span>
-            )}
-          </Link>
+          {isSeeker && (
+            <Link
+              href="/saved-jobs"
+              aria-label="Saved jobs"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "icon" }),
+                "relative sm:hidden",
+              )}
+            >
+              <Bookmark className="size-[1.15rem]" />
+              {hydrated && count > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground">
+                  {count}
+                </span>
+              )}
+            </Link>
+          )}
 
           <ThemeToggle />
+
+          {isAuthed ? (
+            <UserMenu
+              name={profile.fullName}
+              email={profile.email}
+              role={role ?? "seeker"}
+            />
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <Link
+                href="/login"
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                className={buttonVariants({ size: "sm" })}
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </header>

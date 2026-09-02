@@ -19,7 +19,11 @@ export function JobCard({ job }: { job: Job }) {
         className="flex h-full flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className="flex items-start gap-4">
-          <CompanyLogo company={job.company.name} color={job.company.logoColor} />
+          <CompanyLogo
+            company={job.company.name}
+            color={job.company.logoColor}
+            logoPath={job.company.logoPath}
+          />
           <div className="min-w-0 flex-1 pr-10">
             <h3 className="truncate text-base font-semibold tracking-tight">
               {job.title}

@@ -6,6 +6,7 @@ import { ThemeProvider, themeScript } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SavedJobsProvider } from "@/features/saved-jobs/saved-jobs-provider";
+import { getProfile } from "@/features/auth/session";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +33,9 @@ export const metadata: Metadata = {
     "A modern job board where you can browse, filter, save, and post job opportunities.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const profile = await getProfile();
+
   return (
     <html
       lang="en"
@@ -45,7 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ThemeProvider>
           <SavedJobsProvider>
-            <SiteHeader />
+            <SiteHeader profile={profile} />
             <main className="flex-1">{children}</main>
             <SiteFooter />
           </SavedJobsProvider>

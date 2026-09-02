@@ -94,12 +94,19 @@ export function JobDetail({ job }: { job: Job }) {
           <CompanyLogo
             company={job.company.name}
             color={job.company.logoColor}
+            logoPath={job.company.logoPath}
             size="lg"
           />
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-4xl text-balance">{job.title}</h1>
             <p className="mt-1 text-muted-foreground">
-              {job.company.name} · {job.location}
+              <Link
+                href={`/companies/${job.company.slug}`}
+                className="font-medium text-foreground hover:underline"
+              >
+                {job.company.name}
+              </Link>{" "}
+              · {job.location}
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               <JobTypeBadge type={job.type} />
