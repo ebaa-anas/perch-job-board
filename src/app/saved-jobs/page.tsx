@@ -17,7 +17,7 @@ export default async function SavedJobsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <header className="max-w-2xl">
-        <h1 className="text-2xl font-semibold tracking-tight">Saved jobs</h1>
+        <h1 className="font-display text-4xl">Saved jobs</h1>
         <p className="mt-1 text-muted-foreground">
           Your shortlist is stored in this browser — it stays private to you.
         </p>

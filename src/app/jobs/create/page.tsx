@@ -20,7 +20,7 @@ export default function CreateJobPage() {
         All jobs
       </Link>
       <header className="mt-4 max-w-2xl">
-        <h1 className="text-2xl font-semibold tracking-tight">Post a job</h1>
+        <h1 className="font-display text-4xl">Post a job</h1>
         <p className="mt-1 text-muted-foreground">
           Fill in the details below. The role goes live on the board as soon as
           you publish.

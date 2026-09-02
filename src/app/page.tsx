@@ -34,13 +34,13 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="bg-mesh border-b border-border">
+      <section className="bg-editorial grain border-b border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-20 text-center sm:px-6 sm:py-28">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
-            <span className="size-1.5 rounded-full bg-emerald-500" />
+            <span className="size-1.5 rounded-full bg-primary" />
             {jobs.length} open roles from {companyCount} companies
           </span>
-          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+          <h1 className="font-display max-w-3xl text-5xl text-balance sm:text-6xl md:text-7xl">
             Find where you land next
           </h1>
           <p className="max-w-xl text-pretty text-muted-foreground sm:text-lg">
@@ -54,7 +54,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="flex items-end justify-between">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">Latest roles</h2>
+            <h2 className="font-display text-3xl">Latest roles</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Freshly posted opportunities across the board.
             </p>
@@ -79,7 +79,7 @@ export default async function HomePage() {
 
       <section className="border-t border-border bg-card/40">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <h2 className="text-xl font-semibold tracking-tight">How Perch works</h2>
+          <h2 className="font-display text-3xl">How Perch works</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {STEPS.map((step) => (
               <div

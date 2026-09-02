@@ -3,52 +3,56 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
-   Design tokens
+   Design tokens — warm editorial + spruce
    --------------------------------------------------------------------------- */
 :root {
-  --background: #fbfbfc;
-  --foreground: #0a0a0b;
+  --background: #faf8f3;
+  --foreground: #1b1a16;
 
   --card: #ffffff;
-  --card-foreground: #0a0a0b;
+  --card-foreground: #1b1a16;
 
-  --muted: #f4f4f5;
-  --muted-foreground: #6b6b74;
+  --muted: #efece3;
+  --muted-foreground: #6b6557;
 
-  --border: #e6e6ea;
-  --input: #e2e2e7;
+  --border: #e4dfd2;
+  --input: #d9d3c3;
 
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
+  --primary: #1e5f45;
+  --primary-foreground: #f6f9f5;
 
-  --accent: #eef1ff;
-  --accent-foreground: #4338ca;
+  --accent: #e8f0e8;
+  --accent-foreground: #1c5238;
 
-  --ring: #6366f1;
+  --highlight: #b45816;
 
-  --radius: 0.85rem;
+  --ring: #2f8a63;
+
+  --radius: 0.625rem;
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
+  --background: #14130f;
+  --foreground: #f2efe6;
 
-  --card: #111114;
-  --card-foreground: #fafafa;
+  --card: #1c1a15;
+  --card-foreground: #f2efe6;
 
-  --muted: #1b1b1f;
-  --muted-foreground: #9a9aa4;
+  --muted: #262218;
+  --muted-foreground: #a49b88;
 
-  --border: #26262b;
-  --input: #2a2a30;
+  --border: #322d21;
+  --input: #38321f;
 
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
+  --primary: #4fb488;
+  --primary-foreground: #08160f;
 
-  --accent: #1a1830;
-  --accent-foreground: #c7d2fe;
+  --accent: #1e2a22;
+  --accent-foreground: #a9dcc3;
 
-  --ring: #6366f1;
+  --highlight: #e0904c;
+
+  --ring: #4fb488;
 }
 
 @theme inline {
@@ -64,15 +68,17 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-highlight: var(--highlight);
   --color-ring: var(--ring);
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
 
   --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 0.25rem);
-  --radius-sm: calc(var(--radius) - 0.4rem);
-  --radius-xl: calc(var(--radius) + 0.35rem);
+  --radius-md: calc(var(--radius) - 0.15rem);
+  --radius-sm: calc(var(--radius) - 0.28rem);
+  --radius-xl: calc(var(--radius) + 0.4rem);
 }
 
 /* ---------------------------------------------------------------------------
@@ -95,10 +101,9 @@ body {
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--color-primary) 22%, transparent);
+  background: color-mix(in oklab, var(--color-primary) 26%, transparent);
 }
 
-/* Subtle, modern scrollbar */
 @supports (scrollbar-width: thin) {
   * {
     scrollbar-width: thin;
@@ -106,12 +111,49 @@ body {
   }
 }
 
-/* Utility: the mesh gradient used behind hero sections */
-.bg-mesh {
+/* Editorial display type — large headings only */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+
+/* Single-hue wash behind hero / feature sections (no rainbow gradients) */
+.bg-editorial {
   background-image:
-    radial-gradient(60% 55% at 15% 12%, color-mix(in oklab, var(--color-primary) 24%, transparent) 0%, transparent 60%),
-    radial-gradient(45% 45% at 85% 8%, color-mix(in oklab, #ec4899 20%, transparent) 0%, transparent 55%),
-    radial-gradient(55% 55% at 75% 90%, color-mix(in oklab, #22d3ee 16%, transparent) 0%, transparent 60%);
+    radial-gradient(
+      68% 60% at 8% 0%,
+      color-mix(in oklab, var(--color-primary) 13%, transparent) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      50% 55% at 100% 8%,
+      color-mix(in oklab, var(--color-highlight) 8%, transparent) 0%,
+      transparent 55%
+    );
+}
+
+/* Fine film grain — the touch template palettes never add */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.4;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.dark .grain::before {
+  opacity: 0.55;
+  mix-blend-mode: overlay;
 }
 
 @keyframes fade-up {
