@@ -1,0 +1,221 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getProfile } from "@/features/auth/session";
+
+/**
+ * Server Actions for the auth flow. Everything a form or route needs to sign a
+ * user up / in / out, run onboarding, and reset a password. Google OAuth is
+ * wired but degrades to a friendly message when the provider isn't provisioned.
+ */
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+type OnboardingRole = "seeker" | "recruiter";
+
+// ---------------------------------------------------------------------------
+// helpers (exported — reused by the auth pages and the /auth/callback route)
+// ---------------------------------------------------------------------------
+
+/**
+ * Return `next` only when it is a safe same-origin path: a string that starts
+ * with a single "/" (not "//", which browsers treat as protocol-relative).
+ */
+export async function safeNext(next?: string | null): Promise<string | null> {
+  if (typeof next !== "string") return null;
+  if (!next.startsWith("/")) return null;
+  if (next.startsWith("//")) return null;
+  return next;
+}
+
+/** Post-auth destination: the dashboard once a role is set, else onboarding. */
+export async function destForRole(): Promise<string> {
+  const profile = await getProfile();
+  return profile?.role ? "/dashboard" : "/onboarding";
+}
+
+/**
+ * Promote the signed-in user to `admin` when their email is registered in
+ * `admin_emails` and their profile role isn't already `admin`. Runs with the
+ * service-role client because `admin_emails` has no RLS read policy and the
+ * profile write must bypass the "update own profile" check.
+ */
+export async function maybeUpgradeAdmin(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const email = user?.email?.toLowerCase();
+  if (!user || !email) return;
+
+  const admin = createAdminClient();
+
+  // `admin_emails` is a tiny config table; pull it and compare case-insensitively
+  // to mirror the SQL `is_admin()` (`lower(email) = lower(...)`) exactly and to
+  // avoid ILIKE treating `_`/`%` in an address as wildcards.
+  const { data: rows } = await admin.from("admin_emails").select("email");
+  const listed = (rows ?? []).some((r) => r.email.toLowerCase() === email);
+  if (!listed) return;
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role === "admin") return;
+
+  await admin.from("profiles").update({ role: "admin" }).eq("id", user.id);
+}
+
+// ---------------------------------------------------------------------------
+// actions
+// ---------------------------------------------------------------------------
+
+export async function signUp(input: {
+  email: string;
+  password: string;
+  fullName: string;
+  role: OnboardingRole;
+}): Promise<{ ok: true; needsConfirmation: boolean } | { error: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email: input.email,
+    password: input.password,
+    options: {
+      data: { full_name: input.fullName, role: input.role },
+      emailRedirectTo: `${SITE_URL}/auth/callback`,
+    },
+  });
+  if (error) return { error: friendlyAuthError(error.message) };
+  // No session means email confirmation is on and a link was sent.
+  return { ok: true, needsConfirmation: !data.session };
+}
+
+export async function signIn(input: {
+  email: string;
+  password: string;
+  next?: string;
+}): Promise<{ error: string } | void> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email: input.email,
+    password: input.password,
+  });
+  if (error) return { error: friendlyAuthError(error.message) };
+
+  await maybeUpgradeAdmin();
+  redirect((await safeNext(input.next)) ?? (await destForRole()));
+}
+
+export async function signInWithGoogle(
+  next?: string,
+): Promise<{ url: string } | { error: string }> {
+  const notConfigured = { error: "Google sign-in is not configured yet." };
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${SITE_URL}/auth/callback?next=${encodeURIComponent(next ?? "")}`,
+      },
+    });
+    if (error) {
+      return isProviderDisabled(error.message)
+        ? notConfigured
+        : { error: friendlyAuthError(error.message) };
+    }
+    if (!data?.url) return notConfigured;
+    return { url: data.url };
+  } catch {
+    return notConfigured;
+  }
+}
+
+export async function signOut(): Promise<void> {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/");
+}
+
+export async function completeOnboarding(
+  role: OnboardingRole,
+): Promise<{ error: string } | void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role })
+    .eq("id", user.id)
+    .is("role", null);
+  if (error) return { error: friendlyAuthError(error.message) };
+
+  redirect("/dashboard");
+}
+
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ ok: true }> {
+  try {
+    const supabase = await createClient();
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${SITE_URL}/auth/reset`,
+    });
+  } catch {
+    // Swallow — never reveal whether an address is registered.
+  }
+  return { ok: true };
+}
+
+export async function updatePassword(
+  password: string,
+): Promise<{ error: string } | void> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: friendlyAuthError(error.message) };
+  redirect("/login");
+}
+
+// ---------------------------------------------------------------------------
+// error mapping (module-private)
+// ---------------------------------------------------------------------------
+
+function friendlyAuthError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("invalid login credentials")) return "Wrong email or password.";
+  if (m.includes("email not confirmed")) {
+    return "Please confirm your email address first, then sign in.";
+  }
+  if (m.includes("already registered") || m.includes("already been registered")) {
+    return "An account with that email already exists — try signing in.";
+  }
+  if (m.includes("password should be at least")) {
+    return "Password must be at least 8 characters.";
+  }
+  if (m.includes("unable to validate email address")) {
+    return "That email address looks invalid.";
+  }
+  if (m.includes("rate limit") || m.includes("too many requests")) {
+    return "Too many attempts. Wait a minute and try again.";
+  }
+  if (m.includes("new password should be different")) {
+    return "Your new password must be different from the old one.";
+  }
+  return "Something went wrong. Please try again.";
+}
+
+function isProviderDisabled(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes("provider is not enabled") ||
+    m.includes("is not enabled") ||
+    m.includes("unsupported provider") ||
+    m.includes("provider not found") ||
+    m.includes("oauth provider")
+  );
+}
