@@ -24,6 +24,11 @@
 .DS_Store
 *.pem
 
+# local runtime data store (seeded from src/features/jobs/seed.ts on first run)
+/data/
+# stray folder some Windows file locks leave behind after the scaffold move
+/job-board-app/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

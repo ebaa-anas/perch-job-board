@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Empty folder Windows file locks can leave behind after the scaffold move.
+    "job-board-app/**",
   ]),
 ]);
 

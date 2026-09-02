@@ -1,69 +1,112 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, BookmarkPlus, PenLine, SlidersHorizontal } from "lucide-react";
 
-export default function Home() {
+import { buttonVariants } from "@/components/ui/button";
+import { getJobs } from "@/features/jobs/data";
+import { JobCard } from "@/features/jobs/components/job-card";
+import { HomeSearch } from "@/features/jobs/components/home-search";
+
+// Always reflect the current jobs file (new posts show up immediately).
+export const dynamic = "force-dynamic";
+
+const STEPS = [
+  {
+    icon: SlidersHorizontal,
+    title: "Search & filter",
+    body: "Narrow thousands of roles by type, work mode, seniority and pay in a couple of clicks.",
+  },
+  {
+    icon: BookmarkPlus,
+    title: "Save what fits",
+    body: "Bookmark roles as you go. Your shortlist stays on this device, ready when you are.",
+  },
+  {
+    icon: PenLine,
+    title: "Post a role",
+    body: "Hiring? Publish a job with a guided form and see it live on the board immediately.",
+  },
+];
+
+export default async function HomePage() {
+  const jobs = await getJobs();
+  const latest = jobs.slice(0, 6);
+  const companyCount = new Set(jobs.map((job) => job.company)).size;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div>
+      <section className="bg-mesh border-b border-border">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-20 text-center sm:px-6 sm:py-28">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            {jobs.length} open roles from {companyCount} companies
+          </span>
+          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+            Find where you land next
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="max-w-xl text-pretty text-muted-foreground sm:text-lg">
+            A focused job board for product, design and engineering roles. Browse,
+            filter, and shortlist in one place.
           </p>
+          <HomeSearch />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <div className="flex items-end justify-between">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">Latest roles</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Freshly posted opportunities across the board.
+            </p>
+          </div>
+          <Link
+            href="/jobs"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            View all jobs
+            <ArrowRight className="size-4" />
+          </Link>
         </div>
-      </main>
+
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {latest.map((job) => (
+            <li key={job.id}>
+              <JobCard job={job} />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="border-t border-border bg-card/40">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <h2 className="text-xl font-semibold tracking-tight">How Perch works</h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {STEPS.map((step) => (
+              <div
+                key={step.title}
+                className="rounded-xl border border-border bg-card p-6 shadow-sm"
+              >
+                <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <step.icon className="size-5" />
+                </div>
+                <h3 className="mt-4 font-semibold">{step.title}</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground">{step.body}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/jobs" className={buttonVariants({ size: "lg" })}>
+              Browse all jobs
+            </Link>
+            <Link
+              href="/jobs/create"
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              Post a job
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

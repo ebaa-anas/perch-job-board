@@ -1,26 +1,138 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens
+   --------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbfbfc;
+  --foreground: #0a0a0b;
+
+  --card: #ffffff;
+  --card-foreground: #0a0a0b;
+
+  --muted: #f4f4f5;
+  --muted-foreground: #6b6b74;
+
+  --border: #e6e6ea;
+  --input: #e2e2e7;
+
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+
+  --accent: #eef1ff;
+  --accent-foreground: #4338ca;
+
+  --ring: #6366f1;
+
+  --radius: 0.85rem;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+
+  --card: #111114;
+  --card-foreground: #fafafa;
+
+  --muted: #1b1b1f;
+  --muted-foreground: #9a9aa4;
+
+  --border: #26262b;
+  --input: #2a2a30;
+
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+
+  --accent: #1a1830;
+  --accent-foreground: #c7d2fe;
+
+  --ring: #6366f1;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-sm: calc(var(--radius) - 0.4rem);
+  --radius-xl: calc(var(--radius) + 0.35rem);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-primary) 22%, transparent);
+}
+
+/* Subtle, modern scrollbar */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+}
+
+/* Utility: the mesh gradient used behind hero sections */
+.bg-mesh {
+  background-image:
+    radial-gradient(60% 55% at 15% 12%, color-mix(in oklab, var(--color-primary) 24%, transparent) 0%, transparent 60%),
+    radial-gradient(45% 45% at 85% 8%, color-mix(in oklab, #ec4899 20%, transparent) 0%, transparent 55%),
+    radial-gradient(55% 55% at 75% 90%, color-mix(in oklab, #22d3ee 16%, transparent) 0%, transparent 60%);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Perch — a scalable job board
 
-## Getting Started
+A modern job board built with the Next.js App Router. Browse and filter roles,
+open a detail view, shortlist jobs on your device, and post new openings through
+a validated form.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS v4** with light/dark theming (no flash of wrong theme)
+- **React Hook Form + Zod** for the "Post a job" form
+- **lucide-react** icons
+- File-backed data layer (`data/jobs.json`), seeded from code on first run
+
+## Features
+
+| Feature | Where |
+| --- | --- |
+| Browse jobs | `/jobs` — Server Component reads the data layer directly |
+| Search & filter | `JobFilters` (Client) drives URL search params; the page re-renders server-side |
+| View job details | `/jobs/[id]` — dynamic route, `notFound()` for missing ids |
+| Save jobs | `SavedJobsProvider` (Client) persists ids in `localStorage`, syncs across tabs |
+| Post a new job | `/jobs/create` → `JobForm` (RHF + Zod) → `POST /api/jobs` |
+| Loading & error states | `loading.tsx` / `error.tsx` / `not-found.tsx` under `app/jobs` |
+
+## Routes
+
+```
+/                     Landing page with hero search + latest roles
+/jobs                 Browse, search, filter, sort (reads ?q, ?type, ?mode, ?level, ?minSalary, ?sort)
+/jobs/[id]            Job detail
+/jobs/create          Post a new job
+/saved-jobs           Your shortlist (client-side, per device)
+
+/api/jobs             GET (list, same query params) · POST (create, Zod-validated)
+/api/jobs/[id]        GET one job (404 if missing)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Feature-based. Route files stay thin; everything reusable lives under `src/features/*`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+  app/                     Routing only — pages, layouts, loading/error, route handlers
+  components/
+    ui/                    Design-system primitives (Button, Input, Card, Badge, …)
+    layout/                Site header / footer / theme toggle
+    theme-provider.tsx
+  features/
+    jobs/
+      components/          JobCard, JobList, JobFilters, JobDetail, JobForm, …
+      data.ts             Server-only read/write over data/jobs.json (React.cache + write queue)
+      schema.ts           Zod schemas: form + API contract
+      types.ts            Job model and enums
+      utils.ts            Formatting, filter/sort, search-param parsing
+      seed.ts             Initial dataset
+    saved-jobs/
+      saved-jobs-provider.tsx   Context + localStorage
+      storage.ts
+      components/               SaveJobButton, SavedJobsList
+  lib/
+    utils.ts              cn() helper
+```
 
-## Learn More
+**Server vs client split**
 
-To learn more about Next.js, take a look at the following resources:
+- Server Components fetch data (home, `/jobs`, `/jobs/[id]`, `/saved-jobs`) via the
+  `data.ts` layer — no client JS for the list itself.
+- Client Components are the interactive edges only: filters, theme toggle, save
+  button, the create form, the header.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Data layer** — `data/jobs.json` is created from `seed.ts` on first access and is
+the source of truth afterwards. It's git-ignored (local runtime state). Reads are
+memoised per request with `React.cache`; writes go through an in-process queue so
+concurrent creates can't clobber the file.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Getting started
 
-## Deploy on Vercel
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build && npm run start   # production
+npm run lint                      # eslint
+npx tsc --noEmit                  # type check
+```
