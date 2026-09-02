@@ -92,14 +92,14 @@ export function JobDetail({ job }: { job: Job }) {
       <header className="rounded-xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <CompanyLogo
-            company={job.company}
-            color={job.companyLogoColor}
+            company={job.company.name}
+            color={job.company.logoColor}
             size="lg"
           />
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-4xl text-balance">{job.title}</h1>
             <p className="mt-1 text-muted-foreground">
-              {job.company} · {job.location}
+              {job.company.name} · {job.location}
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               <JobTypeBadge type={job.type} />
@@ -110,15 +110,17 @@ export function JobDetail({ job }: { job: Job }) {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center">
-          <a
-            href={job.applyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ size: "lg", className: "sm:w-auto" })}
-          >
-            Apply now
-            <ArrowUpRight className="size-4" />
-          </a>
+          {job.applyUrl && (
+            <a
+              href={job.applyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ size: "lg", className: "sm:w-auto" })}
+            >
+              Apply now
+              <ArrowUpRight className="size-4" />
+            </a>
+          )}
           <SaveJobButton jobId={job.id} layout="full" />
           <p className="text-sm text-muted-foreground sm:ml-auto">
             Posted {formatRelativeDate(job.postedAt)}

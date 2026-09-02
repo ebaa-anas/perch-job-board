@@ -164,7 +164,7 @@ export function countActiveFilters(filters: JobFilters): number {
 function relevanceScore(job: Job, terms: string[]): number {
   if (!terms.length) return 0;
   const title = job.title.toLowerCase();
-  const company = job.company.toLowerCase();
+  const company = job.company.name.toLowerCase();
   const tags = job.tags.map((t) => t.toLowerCase());
   const haystack = `${title} ${company} ${job.location} ${job.description}`.toLowerCase();
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Job } from "@/features/jobs/types";
 import { SEED_JOBS } from "@/features/jobs/seed";
 import {
   filterAndSortJobs,
@@ -7,6 +8,23 @@ import {
   getInitials,
   parseJobFilters,
 } from "@/features/jobs/utils";
+
+function toJob(seed: (typeof SEED_JOBS)[number]): Job {
+  return {
+    ...seed,
+    slug: seed.id,
+    companyId: seed.id,
+    status: "published",
+    applyUrl: seed.applyUrl,
+    company: {
+      name: seed.company,
+      slug: seed.company.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      logoColor: seed.companyLogoColor,
+      logoPath: null,
+    },
+  };
+}
+const JOBS: Job[] = SEED_JOBS.map(toJob);
 
 describe("parseJobFilters", () => {
   it("keeps only known enum values and coerces minSalary", () => {
@@ -35,19 +53,19 @@ describe("parseJobFilters", () => {
 
 describe("filterAndSortJobs", () => {
   it("filters by type and text, newest first when no query", () => {
-    const res = filterAndSortJobs(SEED_JOBS, { type: ["internship"] });
+    const res = filterAndSortJobs(JOBS, { type: ["internship"] });
     expect(res.every((j) => j.type === "internship")).toBe(true);
   });
 
   it("respects minSalary against salaryMax", () => {
-    const res = filterAndSortJobs(SEED_JOBS, { minSalary: 130000 });
+    const res = filterAndSortJobs(JOBS, { minSalary: 130000 });
     expect(res.length).toBeGreaterThan(0);
     expect(res.length).toBeLessThan(SEED_JOBS.length);
     expect(res.every((j) => j.salaryMax >= 130000)).toBe(true);
   });
 
   it("ranks title matches above body matches for a query", () => {
-    const res = filterAndSortJobs(SEED_JOBS, { q: "engineer", sort: "relevance" });
+    const res = filterAndSortJobs(JOBS, { q: "engineer", sort: "relevance" });
     expect(res[0].title.toLowerCase()).toContain("engineer");
   });
 });

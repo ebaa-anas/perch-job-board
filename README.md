@@ -70,10 +70,8 @@ src/
 - Client Components are the interactive edges only: filters, theme toggle, save
   button, the create form, the header.
 
-**Data layer** — `data/jobs.json` is created from `seed.ts` on first access and is
-the source of truth afterwards. It's git-ignored (local runtime state). Reads are
-memoised per request with `React.cache`; writes go through an in-process queue so
-concurrent creates can't clobber the file.
+**Data layer** — Data lives in Supabase. For local dev, run `npx supabase start`
+then `npm run db:reset && npm run seed`. See `docs/DEPLOYMENT.md` for production.
 
 ## Getting started
 

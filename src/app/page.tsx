@@ -30,7 +30,7 @@ const STEPS = [
 export default async function HomePage() {
   const jobs = await getJobs();
   const latest = jobs.slice(0, 6);
-  const companyCount = new Set(jobs.map((job) => job.company)).size;
+  const companyCount = new Set(jobs.map((j) => j.company.slug)).size;
 
   return (
     <div>

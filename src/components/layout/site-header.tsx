@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, Briefcase, Plus } from "lucide-react";
+import { Bookmark, Briefcase } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -79,14 +79,6 @@ export function SiteHeader() {
           </Link>
 
           <ThemeToggle />
-
-          <Link
-            href="/jobs/create"
-            className={buttonVariants({ size: "sm", className: "gap-1.5" })}
-          >
-            <Plus className="size-4" />
-            <span className="hidden sm:inline">Post a job</span>
-          </Link>
         </div>
       </div>
     </header>

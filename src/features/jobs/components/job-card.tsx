@@ -15,17 +15,17 @@ export function JobCard({ job }: { job: Job }) {
   return (
     <div className="group relative">
       <Link
-        href={`/jobs/${job.id}`}
+        href={`/jobs/${job.slug}`}
         className="flex h-full flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className="flex items-start gap-4">
-          <CompanyLogo company={job.company} color={job.companyLogoColor} />
+          <CompanyLogo company={job.company.name} color={job.company.logoColor} />
           <div className="min-w-0 flex-1 pr-10">
             <h3 className="truncate text-base font-semibold tracking-tight">
               {job.title}
             </h3>
             <p className="truncate text-sm text-muted-foreground">
-              {job.company}
+              {job.company.name}
             </p>
           </div>
         </div>
