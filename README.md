@@ -70,8 +70,17 @@ src/
 - Client Components are the interactive edges only: filters, theme toggle, save
   button, the create form, the header.
 
-**Data layer** — Data lives in Supabase. For local dev, run `npx supabase start`
-then `npm run db:reset && npm run seed`. See `docs/DEPLOYMENT.md` for production.
+**Data layer** — Data lives in Supabase. See below for local development.
+
+## Local development
+
+1. `npm install`
+2. Copy `.env.example` → `.env.local` and fill in your Supabase project's URL + keys + DB password (Project Settings → API).
+3. `npx supabase link --project-ref <your-ref>` (one-time), then `npm run db:push` to apply migrations and `npm run seed` for demo data.
+4. `npm run dev` → http://localhost:3000
+
+Tests: `npm test` (unit + integration; integration hits the linked Supabase DB).
+Deploy: see `docs/DEPLOYMENT.md`.
 
 ## Getting started
 
