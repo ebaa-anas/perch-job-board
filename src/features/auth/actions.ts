@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfile } from "@/features/auth/session";
+import { AUTH_ROLES, type AuthRole } from "@/features/auth/schema";
+import { safeRelativePath } from "@/features/auth/redirect";
 
 /**
  * Server Actions for the auth flow. Everything a form or route needs to sign a
@@ -13,21 +15,28 @@ import { getProfile } from "@/features/auth/session";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-type OnboardingRole = "seeker" | "recruiter";
+type OnboardingRole = AuthRole;
+
+/** A `"use server"` action can be called with any argument shape — never trust
+ * the compile-time type. Returns the value only when it is a real signup role
+ * ("seeker" | "recruiter"), never "admin". */
+function asOnboardingRole(value: unknown): OnboardingRole | null {
+  return typeof value === "string" && (AUTH_ROLES as readonly string[]).includes(value)
+    ? (value as OnboardingRole)
+    : null;
+}
 
 // ---------------------------------------------------------------------------
 // helpers (exported — reused by the auth pages and the /auth/callback route)
 // ---------------------------------------------------------------------------
 
 /**
- * Return `next` only when it is a safe same-origin path: a string that starts
- * with a single "/" (not "//", which browsers treat as protocol-relative).
+ * Return `next` only when it is a safe same-origin path. All `"use server"`
+ * exports must be async; the real logic lives in the pure, testable
+ * `safeRelativePath` (blocks `//`, `/\`, schemes, and control-char smuggling).
  */
 export async function safeNext(next?: string | null): Promise<string | null> {
-  if (typeof next !== "string") return null;
-  if (!next.startsWith("/")) return null;
-  if (next.startsWith("//")) return null;
-  return next;
+  return safeRelativePath(next);
 }
 
 /** Post-auth destination: the dashboard once a role is set, else onboarding. */
@@ -79,12 +88,18 @@ export async function signUp(input: {
   fullName: string;
   role: OnboardingRole;
 }): Promise<{ ok: true; needsConfirmation: boolean } | { error: string }> {
+  const role = asOnboardingRole(input.role);
+  if (!role) return { error: "Choose whether you're looking for work or hiring." };
+  if (!input.email || !input.password) {
+    return { error: "Email and password are required." };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
     options: {
-      data: { full_name: input.fullName, role: input.role },
+      data: { full_name: input.fullName, role },
       emailRedirectTo: `${SITE_URL}/auth/callback`,
     },
   });
@@ -140,14 +155,20 @@ export async function signOut(): Promise<void> {
 }
 
 export async function completeOnboarding(
-  role: OnboardingRole,
+  roleInput: OnboardingRole,
 ): Promise<{ error: string } | void> {
+  const role = asOnboardingRole(roleInput);
+  if (!role) return { error: "Pick how you'll use Perch to continue." };
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // `.is("role", null)` makes this one-shot: a user can set their role once and
+  // can never flip it (or self-promote) afterwards. `role` is already narrowed
+  // to seeker|recruiter above, so "admin" can never land here.
   const { error } = await supabase
     .from("profiles")
     .update({ role })
@@ -163,8 +184,10 @@ export async function requestPasswordReset(
 ): Promise<{ ok: true }> {
   try {
     const supabase = await createClient();
+    // Land on the callback so the PKCE code is exchanged for a (recovery)
+    // session, then bounce to /auth/reset which shows the new-password form.
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${SITE_URL}/auth/reset`,
+      redirectTo: `${SITE_URL}/auth/callback?next=/auth/reset`,
     });
   } catch {
     // Swallow — never reveal whether an address is registered.
