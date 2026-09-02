@@ -17,7 +17,13 @@ const STATUS_DOT: Record<Job["status"], string> = {
   closed: "bg-muted-foreground",
 };
 
-export function RecruiterJobs({ jobs }: { jobs: Job[] }) {
+export function RecruiterJobs({
+  jobs,
+  applicantCounts = {},
+}: {
+  jobs: Job[];
+  applicantCounts?: Record<string, number>;
+}) {
   if (jobs.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
@@ -61,7 +67,10 @@ export function RecruiterJobs({ jobs }: { jobs: Job[] }) {
                         href={`/dashboard/jobs/${job.id}/applicants`}
                         className="text-primary hover:underline"
                       >
-                        Applicants
+                        {applicantCounts[job.id] ?? 0}{" "}
+                        {(applicantCounts[job.id] ?? 0) === 1
+                          ? "applicant"
+                          : "applicants"}
                       </Link>
                     </p>
                   </div>

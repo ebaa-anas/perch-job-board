@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 
 import { requireRole } from "@/features/auth/session";
 import { getOwnJob } from "@/features/jobs/data";
+import { getJobApplicants } from "@/features/applications/data";
+import { ApplicantsList } from "@/features/applications/components/applicants-list";
 
 export const metadata: Metadata = { title: "Applicants" };
 
@@ -15,6 +17,8 @@ export default async function ApplicantsPage({
   const job = await getOwnJob(id);
   if (!job) notFound();
 
+  const applicants = await getJobApplicants(job.id);
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <Link
@@ -24,11 +28,13 @@ export default async function ApplicantsPage({
         ← Back to dashboard
       </Link>
       <h1 className="font-display mt-2 text-4xl">Applicants</h1>
-      <p className="mt-1 text-muted-foreground">{job.title}</p>
+      <p className="mt-1 text-muted-foreground">
+        {job.title} · {applicants.length}{" "}
+        {applicants.length === 1 ? "application" : "applications"}
+      </p>
 
-      <div className="mt-8 rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
-        On-site applications open in the next release. Applicants who apply will
-        show up here with their profile, note and CV.
+      <div className="mt-8">
+        <ApplicantsList applicants={applicants} />
       </div>
     </div>
   );

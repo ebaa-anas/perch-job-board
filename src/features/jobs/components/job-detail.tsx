@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowLeft,
-  ArrowUpRight,
   Briefcase,
   CalendarDays,
   Check,
@@ -9,9 +8,9 @@ import {
   Wallet,
 } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CompanyLogo } from "@/features/jobs/components/company-logo";
+import { ApplyCta } from "@/features/applications/components/apply-cta";
 import {
   ExperienceBadge,
   JobTypeBadge,
@@ -78,7 +77,18 @@ function OverviewRow({
   );
 }
 
-export function JobDetail({ job }: { job: Job }) {
+export interface ApplyContext {
+  state: "guest" | "seeker" | "applied" | "owner" | "other";
+  hasCv: boolean;
+}
+
+export function JobDetail({
+  job,
+  apply,
+}: {
+  job: Job;
+  apply: ApplyContext;
+}) {
   return (
     <article className="space-y-6">
       <Link
@@ -117,17 +127,13 @@ export function JobDetail({ job }: { job: Job }) {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center">
-          {job.applyUrl && (
-            <a
-              href={job.applyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ size: "lg", className: "sm:w-auto" })}
-            >
-              Apply now
-              <ArrowUpRight className="size-4" />
-            </a>
-          )}
+          <ApplyCta
+            jobId={job.id}
+            jobSlug={job.slug}
+            applyUrl={job.applyUrl}
+            state={apply.state}
+            hasCv={apply.hasCv}
+          />
           <SaveJobButton jobId={job.id} layout="full" />
           <p className="text-sm text-muted-foreground sm:ml-auto">
             Posted {formatRelativeDate(job.postedAt)}

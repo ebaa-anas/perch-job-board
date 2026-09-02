@@ -15,6 +15,11 @@ import { getProfile, requireUser } from "@/features/auth/session";
 import { getOwnCompany } from "@/features/companies/data";
 import { getOwnJobs } from "@/features/jobs/data";
 import { RecruiterJobs } from "@/features/jobs/components/recruiter-jobs";
+import {
+  getApplicantCountsForOwner,
+  getMyApplications,
+} from "@/features/applications/data";
+import { formatRelativeDate } from "@/features/jobs/utils";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -34,7 +39,11 @@ export default async function DashboardPage() {
   const greeting = firstName ? `Welcome back, ${firstName}` : "Welcome back";
 
   if (profile.role === "recruiter") {
-    const [company, jobs] = await Promise.all([getOwnCompany(), getOwnJobs()]);
+    const [company, jobs, applicantCounts] = await Promise.all([
+      getOwnCompany(),
+      getOwnJobs(),
+      getApplicantCountsForOwner(),
+    ]);
     return (
       <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -67,7 +76,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="mt-8">
-            <RecruiterJobs jobs={jobs} />
+            <RecruiterJobs jobs={jobs} applicantCounts={applicantCounts} />
           </div>
         )}
       </div>
@@ -75,31 +84,79 @@ export default async function DashboardPage() {
   }
 
   // Seeker
+  const applications = await getMyApplications();
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <p className="text-sm font-medium text-primary">Job seeker</p>
       <h1 className="font-display mt-1 text-4xl">{greeting}</h1>
-      <p className="mt-2 max-w-prose text-muted-foreground">
-        Your job-search workspace. Application tracking arrives in the next
-        release — here&apos;s what&apos;s live now.
-      </p>
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        {SEEKER_LINKS.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary hover:bg-accent"
-          >
-            <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-primary">
-              <link.icon className="size-5" />
-            </span>
-            <span className="inline-flex items-center gap-1 font-medium">
-              {link.label}
-              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
-        ))}
-      </div>
+
+      <section className="mt-8">
+        <h2 className="font-display text-2xl">
+          My applications{" "}
+          <span className="text-muted-foreground">({applications.length})</span>
+        </h2>
+        {applications.length === 0 ? (
+          <p className="mt-3 rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+            You haven&apos;t applied to anything yet.{" "}
+            <Link href="/jobs" className="text-primary hover:underline">
+              Browse jobs
+            </Link>
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {applications.map((app) => (
+              <li
+                key={app.id}
+                className="flex flex-col gap-2 rounded-xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={`/jobs/${app.job.slug}`}
+                    className="font-medium hover:underline"
+                  >
+                    {app.job.title}
+                  </Link>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    <Link
+                      href={`/companies/${app.job.company.slug}`}
+                      className="hover:underline"
+                    >
+                      {app.job.company.name}
+                    </Link>{" "}
+                    · applied {formatRelativeDate(app.createdAt)}
+                  </p>
+                </div>
+                {app.job.status !== "published" && (
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                    {app.job.status === "closed" ? "Role closed" : "Not live"}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <div className="grid gap-4 sm:grid-cols-3">
+          {SEEKER_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary hover:bg-accent"
+            >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-primary">
+                <link.icon className="size-5" />
+              </span>
+              <span className="inline-flex items-center gap-1 font-medium">
+                {link.label}
+                <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
