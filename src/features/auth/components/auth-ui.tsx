@@ -51,7 +51,7 @@ export function FormError({ message }: { message?: string | null }) {
   );
 }
 
-/** Label + control + (error | hint), matching the JobForm field rhythm. */
+/** Label + control + (error | hint), matching the job editor field rhythm. */
 export function Field({
   label,
   htmlFor,

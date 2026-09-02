@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SavedJobsProvider } from "@/features/saved-jobs/saved-jobs-provider";
 import { getProfile } from "@/features/auth/session";
+import { listSavedJobIds } from "@/features/saved-jobs/actions";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,8 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const profile = await getProfile();
+  const isSeeker = profile?.role === "seeker";
+  const savedIds = isSeeker ? await listSavedJobIds() : [];
 
   return (
     <html
@@ -47,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ThemeProvider>
-          <SavedJobsProvider>
+          <SavedJobsProvider authedSeeker={isSeeker} serverIds={savedIds}>
             <SiteHeader profile={profile} />
             <main className="flex-1">{children}</main>
             <SiteFooter />
