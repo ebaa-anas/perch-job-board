@@ -1,4 +1,35 @@
-import type { Job } from "@/features/jobs/types";
+import type {
+  ExperienceLevel,
+  JobType,
+  WorkMode,
+} from "@/features/jobs/types";
+
+/**
+ * Shape of a row in this seed file. Deliberately the *pre-Supabase* job shape
+ * (flat `company` string, `companyLogoColor`, no `slug`/`status`) — the seed
+ * script (`scripts/seed.ts`, Task 7) reads these fields and maps them onto the
+ * `companies` + `jobs` tables.
+ */
+type SeedJob = {
+  id: string;
+  title: string;
+  company: string;
+  companyLogoColor: string;
+  location: string;
+  type: JobType;
+  workMode: WorkMode;
+  experience: ExperienceLevel;
+  salaryMin: number;
+  salaryMax: number;
+  currency: string;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  perks: string[];
+  tags: string[];
+  applyUrl: string;
+  postedAt: string;
+};
 
 /** Days-ago helper so the seed always looks freshly posted. */
 function daysAgo(days: number): string {
@@ -9,10 +40,9 @@ function daysAgo(days: number): string {
 }
 
 /**
- * Initial dataset. Copied into `data/jobs.json` the first time the data layer
- * runs, after which the JSON file is the source of truth.
+ * Initial dataset consumed by `scripts/seed.ts` to populate Supabase.
  */
-export const SEED_JOBS: Job[] = [
+export const SEED_JOBS: SeedJob[] = [
   {
     id: "senior-frontend-engineer-northwind",
     title: "Senior Frontend Engineer",

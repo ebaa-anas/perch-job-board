@@ -12,11 +12,19 @@ export type WorkMode = (typeof WORK_MODES)[number];
 export const EXPERIENCE_LEVELS = ["junior", "mid", "senior", "lead"] as const;
 export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number];
 
+export interface JobCompany {
+  name: string;
+  slug: string;
+  logoColor: string;
+  logoPath: string | null;
+}
+
 export interface Job {
   id: string;
+  slug: string;
+  companyId: string;
+  company: JobCompany;
   title: string;
-  company: string;
-  companyLogoColor: string;
   location: string;
   type: JobType;
   workMode: WorkMode;
@@ -29,7 +37,8 @@ export interface Job {
   requirements: string[];
   perks: string[];
   tags: string[];
-  applyUrl: string;
+  applyUrl: string | null;
+  status: "published" | "draft" | "closed";
   postedAt: string; // ISO 8601
 }
 
