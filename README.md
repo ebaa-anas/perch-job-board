@@ -1,96 +1,104 @@
-# Perch — a scalable job board
+# Perch — a two-sided job board
 
-A modern job board built with the Next.js App Router. Browse and filter roles,
-open a detail view, shortlist jobs on your device, and post new openings through
-a validated form.
+A job board built with the Next.js App Router. Seekers browse, filter, save and
+apply; recruiters post roles and review applicants; an admin moderates. Data
+lives in Supabase Postgres with row-level security as the boundary.
 
 ## Stack
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript**
 - **Tailwind CSS v4** with light/dark theming (no flash of wrong theme)
-- **React Hook Form + Zod** for the "Post a job" form
+- **Supabase** — Postgres, Auth (email + Google), Storage, RLS; `@supabase/ssr`
+- **React Hook Form + Zod** for every form
+- **Resend** (REST) for the "new applicant" email — optional, degrades gracefully
 - **lucide-react** icons
-- File-backed data layer (`data/jobs.json`), seeded from code on first run
 
-## Features
-
-| Feature | Where |
-| --- | --- |
-| Browse jobs | `/jobs` — Server Component reads the data layer directly |
-| Search & filter | `JobFilters` (Client) drives URL search params; the page re-renders server-side |
-| View job details | `/jobs/[id]` — dynamic route, `notFound()` for missing ids |
-| Save jobs | `SavedJobsProvider` (Client) persists ids in `localStorage`, syncs across tabs |
-| Post a new job | `/jobs/create` → `JobForm` (RHF + Zod) → `POST /api/jobs` |
-| Loading & error states | `loading.tsx` / `error.tsx` / `not-found.tsx` under `app/jobs` |
-
-## Routes
+## Roles & routes
 
 ```
-/                     Landing page with hero search + latest roles
-/jobs                 Browse, search, filter, sort (reads ?q, ?type, ?mode, ?level, ?minSalary, ?sort)
-/jobs/[id]            Job detail
-/jobs/create          Post a new job
-/saved-jobs           Your shortlist (client-side, per device)
+PUBLIC
+  /                     landing page
+  /jobs                 browse: ?q ?type ?mode ?level ?minSalary ?sort
+  /jobs/[slug]          job detail + apply
+  /companies/[slug]     company profile + its published jobs
+  /login /signup /onboarding
+  /auth/callback /auth/reset /auth/auth-code-error
 
-/api/jobs             GET (list, same query params) · POST (create, Zod-validated)
-/api/jobs/[id]        GET one job (404 if missing)
+SEEKER (role='seeker')
+  /dashboard            "My applications" + quick links
+  /profile             headline, skills, links, CV upload
+  /saved-jobs          shortlist (localStorage as guest, DB when signed in)
+
+RECRUITER (role='recruiter')
+  /dashboard                    own jobs grouped by status + applicant counts
+  /dashboard/jobs/new           post (draft | publish)
+  /dashboard/jobs/[id]/edit
+  /dashboard/jobs/[id]/applicants   list + detail drawer + CV download
+  /company                     company profile + logo
+
+ADMIN (email in admin_emails → role auto-upgraded on login)
+  /admin               jobs / users / demo-data moderation
+
+API
+  GET /api/jobs        public JSON list (same query params)
+  GET /api/jobs/[slug] one job
+  GET /api/health      weekly Vercel Cron keep-alive
 ```
+
+Route protection: `proxy.ts` redirects signed-out users off `/dashboard`,
+`/profile`, `/company`, `/admin`; each of those segments' `layout.tsx` enforces
+the exact role via `requireRole`.
 
 ## Architecture
 
-Feature-based. Route files stay thin; everything reusable lives under `src/features/*`.
+Feature-based. Route files stay thin; everything reusable lives under
+`src/features/*`.
 
 ```
 src/
-  app/                     Routing only — pages, layouts, loading/error, route handlers
+  app/                     routing only — pages, layouts, route handlers
   components/
-    ui/                    Design-system primitives (Button, Input, Card, Badge, …)
-    layout/                Site header / footer / theme toggle
-    theme-provider.tsx
+    ui/                    design-system primitives
+    layout/                header (role-aware) / footer / theme toggle / user menu
+    brand/                 <Logo> / <Wordmark>
   features/
-    jobs/
-      components/          JobCard, JobList, JobFilters, JobDetail, JobForm, …
-      data.ts             Server-only read/write over data/jobs.json (React.cache + write queue)
-      schema.ts           Zod schemas: form + API contract
-      types.ts            Job model and enums
-      utils.ts            Formatting, filter/sort, search-param parsing
-      seed.ts             Initial dataset
-    saved-jobs/
-      saved-jobs-provider.tsx   Context + localStorage
-      storage.ts
-      components/               SaveJobButton, SavedJobsList
-  lib/
-    utils.ts              cn() helper
+    jobs/                  data, schema, actions, JobCard/JobList/JobDetail/editor
+    saved-jobs/            provider (localStorage + DB), actions
+    auth/                  session helpers, server actions, forms, redirect guard
+    profiles/             seeker profile + CV upload
+    companies/            company profile + logo + public page data
+    applications/         apply dialog, applicants list/drawer, actions, email
+    admin/                overview, tables, moderation actions
+    marketing/            landing-page sections
+  lib/supabase/            server / client / admin / proxy factories
+  lib/                     slug, email, utils
+supabase/migrations/       0001 schema → 0006 saved-jobs RLS
 ```
-
-**Server vs client split**
-
-- Server Components fetch data (home, `/jobs`, `/jobs/[id]`, `/saved-jobs`) via the
-  `data.ts` layer — no client JS for the list itself.
-- Client Components are the interactive edges only: filters, theme toggle, save
-  button, the create form, the header.
-
-**Data layer** — Data lives in Supabase. See below for local development.
 
 ## Local development
 
 1. `npm install`
-2. Copy `.env.example` → `.env.local` and fill in your Supabase project's URL + keys + DB password (Project Settings → API).
-3. `npx supabase link --project-ref <your-ref>` (one-time), then `npm run db:push` to apply migrations and `npm run seed` for demo data.
+2. Copy `.env.example` → `.env.local` and fill in the Supabase URL + keys + DB
+   password (Project Settings → API). `NEXT_PUBLIC_SITE_URL` should be the
+   canonical origin. `RESEND_API_KEY` is optional.
+3. `npx supabase link --project-ref <your-ref>` (one-time), then
+   `npm run db:push` to apply migrations and `npm run seed` for the demo data.
 4. `npm run dev` → http://localhost:3000
 
-Tests: `npm test` (unit + integration; integration hits the linked Supabase DB).
+Run the Supabase CLI from PowerShell on Windows (Git Bash breaks the Go binary).
+
+## Scripts
+
+```bash
+npm run dev
+npm run build && npm run start
+npm run lint                  # eslint
+npx tsc --noEmit              # type check
+npm run test:unit             # unit tests only
+npm test                      # unit + integration (integration hits the linked DB)
+npm run db:push               # apply migrations
+npm run db:types              # regenerate src/lib/supabase/database.types.ts
+npm run seed                  # demo companies + jobs + admin email
+```
+
 Deploy: see `docs/DEPLOYMENT.md`.
-
-## Getting started
-
-```bash
-npm install
-npm run dev      # http://localhost:3000
-```
-
-```bash
-npm run build && npm run start   # production
-npm run lint                      # eslint
-npx tsc --noEmit                  # type check
-```
