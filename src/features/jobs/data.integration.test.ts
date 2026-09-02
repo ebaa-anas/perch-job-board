@@ -79,3 +79,43 @@ describe("jobs read contract", () => {
     expect(data).toHaveLength(0);
   });
 });
+
+// Depends on `npm run seed` (Task 7, Ruling 11) having populated the hosted DB:
+// one `companies` row per distinct SEED_JOBS company (14) + 14 published jobs.
+describe("seed data present", () => {
+  it("has >= 14 companies and >= 14 published jobs", async () => {
+    const svc = serviceClient();
+
+    const { count: companyCount, error: cErr } = await svc
+      .from("companies")
+      .select("id", { count: "exact", head: true });
+    expect(cErr).toBeNull();
+    expect(companyCount ?? 0).toBeGreaterThanOrEqual(14);
+
+    const { count: jobCount, error: jErr } = await svc
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "published");
+    expect(jErr).toBeNull();
+    expect(jobCount ?? 0).toBeGreaterThanOrEqual(14);
+  });
+
+  it("has a real seeded company + job (Northwind Labs)", async () => {
+    const svc = serviceClient();
+
+    const { data: company } = await svc
+      .from("companies")
+      .select("id")
+      .eq("slug", "northwind-labs")
+      .maybeSingle();
+    expect(company).not.toBeNull();
+
+    const { data: job } = await svc
+      .from("jobs")
+      .select("slug, status")
+      .eq("slug", "senior-frontend-engineer-northwind")
+      .maybeSingle();
+    expect(job).not.toBeNull();
+    expect((job as { status: string } | null)?.status).toBe("published");
+  });
+});
