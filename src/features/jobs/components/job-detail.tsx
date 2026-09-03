@@ -80,6 +80,7 @@ function OverviewRow({
 export interface ApplyContext {
   state: "guest" | "seeker" | "applied" | "owner" | "other";
   hasCv: boolean;
+  appliedVia?: "onsite" | "external";
 }
 
 export function JobDetail({
@@ -133,6 +134,7 @@ export function JobDetail({
             applyUrl={job.applyUrl}
             state={apply.state}
             hasCv={apply.hasCv}
+            appliedVia={apply.appliedVia}
           />
           <SaveJobButton jobId={job.id} layout="full" />
           <p className="text-sm text-muted-foreground sm:ml-auto">

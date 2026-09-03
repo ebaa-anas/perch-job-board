@@ -112,12 +112,19 @@ export default async function DashboardPage() {
                 className="flex flex-col gap-2 rounded-xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <Link
-                    href={`/jobs/${app.job.slug}`}
-                    className="font-medium hover:underline"
-                  >
-                    {app.job.title}
-                  </Link>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/jobs/${app.job.slug}`}
+                      className="font-medium hover:underline"
+                    >
+                      {app.job.title}
+                    </Link>
+                    {app.via === "external" && (
+                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
+                        via company site
+                      </span>
+                    )}
+                  </span>
                   <p className="mt-0.5 text-sm text-muted-foreground">
                     <Link
                       href={`/companies/${app.job.company.slug}`}

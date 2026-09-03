@@ -3,9 +3,12 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/features/auth/session";
 
+export type ApplyVia = "onsite" | "external";
+
 export interface MyApplication {
   id: string;
   note: string | null;
+  via: ApplyVia;
   createdAt: string;
   job: {
     id: string;
@@ -19,6 +22,7 @@ export interface MyApplication {
 export interface JobApplicant {
   id: string;
   note: string | null;
+  via: ApplyVia;
   createdAt: string;
   cvFilename: string | null;
   hasCv: boolean;
@@ -62,6 +66,22 @@ export const hasApplied = cache(async (jobId: string): Promise<boolean> => {
   return (count ?? 0) > 0;
 });
 
+/** The signed-in seeker's application to this job, if any (for the apply CTA). */
+export const getApplyRecord = cache(
+  async (jobId: string): Promise<{ via: ApplyVia } | null> => {
+    const user = await getUser();
+    if (!user) return null;
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("applications")
+      .select("via")
+      .eq("job_id", jobId)
+      .eq("seeker_id", user.id)
+      .maybeSingle();
+    return data ? { via: (data.via as ApplyVia) ?? "onsite" } : null;
+  },
+);
+
 /** The signed-in seeker's applications, newest first, with job + company. */
 export const getMyApplications = cache(async (): Promise<MyApplication[]> => {
   const user = await getUser();
@@ -70,7 +90,7 @@ export const getMyApplications = cache(async (): Promise<MyApplication[]> => {
   const { data, error } = await supabase
     .from("applications")
     .select(
-      "id, note, created_at, jobs!inner ( id, slug, title, status, companies!inner ( name, slug ) )",
+      "id, note, via, created_at, jobs!inner ( id, slug, title, status, companies!inner ( name, slug ) )",
     )
     .eq("seeker_id", user.id)
     .order("created_at", { ascending: false });
@@ -79,6 +99,7 @@ export const getMyApplications = cache(async (): Promise<MyApplication[]> => {
   type Row = {
     id: string;
     note: string | null;
+    via: string | null;
     created_at: string;
     jobs: {
       id: string;
@@ -92,6 +113,7 @@ export const getMyApplications = cache(async (): Promise<MyApplication[]> => {
   return (data as unknown as Row[]).map((row) => ({
     id: row.id,
     note: row.note,
+    via: (row.via as ApplyVia) ?? "onsite",
     createdAt: row.created_at,
     job: {
       id: row.jobs.id,
@@ -116,7 +138,7 @@ export const getJobApplicants = cache(
     const { data, error } = await supabase
       .from("applications")
       .select(
-        "id, note, created_at, cv_path, cv_filename, seeker_id, " +
+        "id, note, via, created_at, cv_path, cv_filename, seeker_id, " +
           "profiles ( full_name, seeker_profiles ( headline, location, portfolio_url, linkedin_url, github_url ) )",
       )
       .eq("job_id", jobId)
@@ -126,6 +148,7 @@ export const getJobApplicants = cache(
     type Row = {
       id: string;
       note: string | null;
+      via: string | null;
       created_at: string;
       cv_path: string | null;
       cv_filename: string | null;
@@ -147,6 +170,7 @@ export const getJobApplicants = cache(
       return {
         id: row.id,
         note: row.note,
+        via: (row.via as ApplyVia) ?? "onsite",
         createdAt: row.created_at,
         cvFilename: row.cv_filename,
         hasCv: Boolean(row.cv_path),

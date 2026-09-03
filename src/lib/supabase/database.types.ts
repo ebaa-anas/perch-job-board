@@ -101,6 +101,7 @@ export type Database = {
           job_id: string
           note: string | null
           seeker_id: string
+          via: string
         }
         Insert: {
           created_at?: string
@@ -110,6 +111,7 @@ export type Database = {
           job_id: string
           note?: string | null
           seeker_id: string
+          via?: string
         }
         Update: {
           created_at?: string
@@ -119,6 +121,7 @@ export type Database = {
           job_id?: string
           note?: string | null
           seeker_id?: string
+          via?: string
         }
         Relationships: [
           {
@@ -229,6 +232,57 @@ export type Database = {
           {
             foreignKeyName: "company_reports_reporter_id_fkey"
             columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_reviews: {
+        Row: {
+          body: string | null
+          company_id: string
+          created_at: string
+          id: string
+          rating: number
+          reviewer_id: string
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          reviewer_id: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          reviewer_id?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

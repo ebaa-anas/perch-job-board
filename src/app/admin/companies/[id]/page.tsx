@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { CompanyLogo } from "@/features/jobs/components/company-logo";
 import { getCompanyAdminDetail } from "@/features/admin/data";
 import { CompanyModeration } from "@/features/admin/components/company-moderation";
+import { CompanyReviewsMod } from "@/features/admin/components/company-reviews-mod";
 import { formatDate } from "@/features/jobs/utils";
 
 export const metadata: Metadata = { title: "Admin · Company" };
@@ -17,7 +18,7 @@ export default async function AdminCompanyDetailPage({
   const detail = await getCompanyAdminDetail(id);
   if (!detail) notFound();
 
-  const { company, ownerEmail, jobs, reports } = detail;
+  const { company, ownerEmail, jobs, reports, reviews } = detail;
   const openReports = reports.filter((r) => r.status === "open");
 
   return (
@@ -58,6 +59,8 @@ export default async function AdminCompanyDetailPage({
         suspended={Boolean(company.suspendedAt)}
         hasOwnerEmail={Boolean(ownerEmail)}
       />
+
+      <CompanyReviewsMod reviews={reviews} />
 
       <section>
         <h3 className="font-display text-xl">

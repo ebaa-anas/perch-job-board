@@ -51,6 +51,7 @@ export async function sendNewApplicantEmail(input: {
   applicantName: string;
   applicantHeadline: string | null;
   note: string | null;
+  external?: boolean;
 }): Promise<SendResult> {
   const link = `${SITE_URL}/dashboard/jobs/${input.jobId}/applicants`;
   const snippet = input.note
@@ -59,9 +60,12 @@ export async function sendNewApplicantEmail(input: {
       : input.note
     : null;
 
-  const subject = `New applicant for ${input.jobTitle}`;
+  const verb = input.external ? "clicked through to apply for" : "applied for";
+  const subject = input.external
+    ? `Someone applied externally for ${input.jobTitle}`
+    : `New applicant for ${input.jobTitle}`;
   const lines = [
-    `${input.applicantName} applied for ${input.jobTitle}.`,
+    `${input.applicantName} ${verb} ${input.jobTitle}.`,
     input.applicantHeadline ? `Headline: ${input.applicantHeadline}` : null,
     snippet ? `Note: ${snippet}` : null,
     `Review applicants: ${link}`,
@@ -73,7 +77,7 @@ export async function sendNewApplicantEmail(input: {
     text: lines.join("\n\n"),
     html: `
       <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1b1a16">
-        <p><strong>${escapeHtml(input.applicantName)}</strong> applied for
+        <p><strong>${escapeHtml(input.applicantName)}</strong> ${verb}
         <strong>${escapeHtml(input.jobTitle)}</strong>.</p>
         ${input.applicantHeadline ? `<p style="color:#555">${escapeHtml(input.applicantHeadline)}</p>` : ""}
         ${snippet ? `<blockquote style="border-left:3px solid #ddd;margin:0;padding-left:12px;color:#555">${escapeHtml(snippet)}</blockquote>` : ""}

@@ -5,8 +5,15 @@ import { Globe, ShieldAlert } from "lucide-react";
 import { CompanyLogo } from "@/features/jobs/components/company-logo";
 import { JobList } from "@/features/jobs/components/job-list";
 import { getCompanyBySlug, getCompanyJobs } from "@/features/companies/data";
+import {
+  getCompanyReviews,
+  getOwnReview,
+  getReviewSummary,
+} from "@/features/companies/reviews";
 import { getProfile } from "@/features/auth/session";
 import { ReportCompanyButton } from "@/features/companies/components/report-company-dialog";
+import { CompanyReviews } from "@/features/companies/components/company-reviews";
+import { Stars } from "@/features/companies/components/stars";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +23,12 @@ export async function generateMetadata({
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
   if (!company) return { title: "Company not found" };
+  const { avg, count } = await getReviewSummary(company.id);
+  const rated = count > 0 ? ` · ${avg}★ (${count})` : "";
   return {
     title: company.name,
-    description: company.tagline ?? `Open roles at ${company.name} on Perch.`,
+    description:
+      (company.tagline ?? `Open roles at ${company.name} on Perch.`) + rated,
   };
 }
 
@@ -34,9 +44,16 @@ export default async function CompanyPublicPage({
 
   const isAdmin = profile?.role === "admin";
   const isOwner = Boolean(profile) && profile?.id === company.ownerId;
+  const isSeeker = profile?.role === "seeker";
   const suspended = Boolean(company.suspendedAt);
   const showJobs = !suspended || isAdmin || isOwner;
-  const jobs = showJobs ? await getCompanyJobs(company.id) : [];
+
+  const [jobs, summary, reviews, ownReview] = await Promise.all([
+    showJobs ? getCompanyJobs(company.id) : Promise.resolve([]),
+    getReviewSummary(company.id),
+    getCompanyReviews(company.id),
+    isSeeker && !isOwner ? getOwnReview(company.id) : Promise.resolve(null),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
@@ -63,6 +80,15 @@ export default async function CompanyPublicPage({
         />
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-4xl">{company.name}</h1>
+          {summary.avg != null && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-sm">
+              <Stars value={summary.avg} />
+              <span className="font-medium">{summary.avg.toFixed(1)}</span>
+              <span className="text-muted-foreground">
+                ({summary.count})
+              </span>
+            </p>
+          )}
           {company.tagline && (
             <p className="mt-1 text-muted-foreground">{company.tagline}</p>
           )}
@@ -110,6 +136,16 @@ export default async function CompanyPublicPage({
           </div>
         </section>
       )}
+
+      <CompanyReviews
+        companyId={company.id}
+        companyName={company.name}
+        summary={summary}
+        reviews={reviews}
+        canReview={isSeeker && !isOwner}
+        isGuest={!profile}
+        ownReview={ownReview}
+      />
     </div>
   );
 }

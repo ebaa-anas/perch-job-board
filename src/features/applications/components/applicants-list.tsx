@@ -35,15 +35,22 @@ export function ApplicantsList({ applicants }: { applicants: JobApplicant[] }) {
                 {getInitials(a.seeker.fullName || "Applicant")}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">
-                  {a.seeker.fullName || "Applicant"}
+                <span className="flex items-center gap-2">
+                  <span className="truncate font-medium">
+                    {a.seeker.fullName || "Applicant"}
+                  </span>
+                  {a.via === "external" && (
+                    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
+                      via company site
+                    </span>
+                  )}
                 </span>
                 <span className="block truncate text-sm text-muted-foreground">
                   {a.seeker.headline || "—"}
                   {a.seeker.location ? ` · ${a.seeker.location}` : ""}
                 </span>
               </span>
-              <span className="shrink-0 text-xs text-muted-foreground">
+              <span className="hidden shrink-0 text-xs text-muted-foreground sm:block">
                 {formatDate(a.createdAt)}
               </span>
             </button>
@@ -125,6 +132,13 @@ function ApplicantDrawer({
               Applied {formatDate(applicant.createdAt)}
             </p>
           </div>
+
+          {applicant.via === "external" && (
+            <p className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              Applied through your external link — their note and CV are on your
+              own site, not here.
+            </p>
+          )}
 
           {applicant.note && (
             <div>

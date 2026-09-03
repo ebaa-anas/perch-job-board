@@ -6,7 +6,7 @@ import { JobDetail, type ApplyContext } from "@/features/jobs/components/job-det
 import { getProfile } from "@/features/auth/session";
 import { getOwnCompany } from "@/features/companies/data";
 import { getOwnSeekerProfile } from "@/features/profiles/data";
-import { hasApplied } from "@/features/applications/data";
+import { getApplyRecord } from "@/features/applications/data";
 
 export async function generateMetadata({
   params,
@@ -38,13 +38,14 @@ async function resolveApplyContext(
   if (profile.role === "admin") return { state: "other", hasCv: false };
 
   // seeker
-  const [applied, seeker] = await Promise.all([
-    hasApplied(jobId),
+  const [record, seeker] = await Promise.all([
+    getApplyRecord(jobId),
     getOwnSeekerProfile(),
   ]);
   return {
-    state: applied ? "applied" : "seeker",
+    state: record ? "applied" : "seeker",
     hasCv: Boolean(seeker?.cvPath),
+    appliedVia: record?.via,
   };
 }
 

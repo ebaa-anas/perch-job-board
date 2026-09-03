@@ -364,3 +364,71 @@ export async function adminReseedDemo(): Promise<Result> {
     message: `Seeded ${companyRows.length} companies + ${jobRows.length} jobs.`,
   };
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Reviews moderation + seeker CV access                                      */
+/* -------------------------------------------------------------------------- */
+
+export async function adminSetReviewStatus(
+  id: string,
+  status: "visible" | "hidden",
+): Promise<Result> {
+  const actor = await requireAdmin();
+  if (!["visible", "hidden"].includes(status)) {
+    return { ok: false, error: "Bad status." };
+  }
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("company_reviews")
+    .update({ status })
+    .eq("id", id)
+    .select("companies!inner ( slug )")
+    .single();
+  if (error) return { ok: false, error: error.message };
+  await logAudit(actor, {
+    action: "review.status",
+    targetType: "company_review",
+    targetId: id,
+    detail: { status },
+  });
+  const slug = (data as { companies?: { slug?: string } }).companies?.slug;
+  revalidatePath("/admin");
+  if (slug) revalidatePath(`/companies/${slug}`);
+  return { ok: true };
+}
+
+export async function adminDeleteReview(id: string): Promise<Result> {
+  const actor = await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from("company_reviews").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  await logAudit(actor, {
+    action: "review.delete",
+    targetType: "company_review",
+    targetId: id,
+  });
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/** Signed URL for a seeker's current CV — admin only. */
+export async function adminSeekerCvUrl(
+  userId: string,
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("seeker_profiles")
+    .select("cv_path")
+    .eq("profile_id", userId)
+    .maybeSingle();
+  if (!data?.cv_path) return { ok: false, error: "No CV on file." };
+
+  const signed = await admin.storage
+    .from("cvs")
+    .createSignedUrl(data.cv_path, 60);
+  if (signed.error || !signed.data?.signedUrl) {
+    return { ok: false, error: "Couldn't generate the link." };
+  }
+  return { ok: true, url: signed.data.signedUrl };
+}

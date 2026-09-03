@@ -11,6 +11,7 @@ import { FormError } from "@/features/auth/components/auth-ui";
 import { applyToJob } from "@/features/applications/actions";
 
 type State = "guest" | "seeker" | "applied" | "owner" | "other";
+type Via = "onsite" | "external";
 
 export function ApplyCta({
   jobId,
@@ -18,45 +19,128 @@ export function ApplyCta({
   applyUrl,
   state,
   hasCv,
+  appliedVia,
 }: {
   jobId: string;
   jobSlug: string;
   applyUrl: string | null;
   state: State;
   hasCv: boolean;
+  appliedVia?: Via;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [applied, setApplied] = React.useState(state === "applied");
+  const [via, setVia] = React.useState<Via | undefined>(appliedVia);
   const [open, setOpen] = React.useState(false);
+  const [extBusy, setExtBusy] = React.useState(false);
 
   const wantsApply = searchParams.get("apply") === "1";
   const [autoHandled, setAutoHandled] = React.useState(false);
-  if (wantsApply && !autoHandled && state === "seeker" && !applied && !open) {
+  if (
+    wantsApply &&
+    !autoHandled &&
+    state === "seeker" &&
+    !applied &&
+    !open &&
+    !applyUrl
+  ) {
     setAutoHandled(true);
     setOpen(true);
   }
 
-  // External application — always wins, no account needed.
+  const markApplied = (v: Via) => {
+    setApplied(true);
+    setVia(v);
+    router.refresh();
+  };
+
+  /* ---- external-apply jobs ------------------------------------------------ */
   if (applyUrl) {
+    const openExternal = () =>
+      window.open(applyUrl, "_blank", "noopener,noreferrer");
+
+    if (state === "owner") {
+      return (
+        <Link
+          href={`/dashboard/jobs/${jobId}/applicants`}
+          className={buttonVariants({ variant: "outline", size: "lg" })}
+        >
+          View applicants
+        </Link>
+      );
+    }
+
+    if (applied) {
+      return (
+        <div className="flex flex-col gap-1.5">
+          <span className="inline-flex w-fit items-center gap-2 rounded-md border border-primary/30 bg-accent px-4 py-2 text-sm font-medium text-primary">
+            <Check className="size-4" />
+            {via === "external" ? "Applied on the company site" : "Applied"}
+          </span>
+          <button
+            type="button"
+            onClick={openExternal}
+            className="w-fit text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            Open the application page again
+          </button>
+        </div>
+      );
+    }
+
+    if (state === "seeker") {
+      return (
+        <Button
+          size="lg"
+          disabled={extBusy}
+          onClick={async () => {
+            openExternal();
+            setExtBusy(true);
+            const r = await applyToJob({ jobId, external: true });
+            setExtBusy(false);
+            if (r.ok) markApplied("external");
+          }}
+        >
+          {extBusy ? <Loader2 className="size-4 animate-spin" /> : null}
+          Apply on company site
+          <ArrowUpRight className="size-4" />
+        </Button>
+      );
+    }
+
+    // guest / other
     return (
-      <a
-        href={applyUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={buttonVariants({ size: "lg", className: "sm:w-auto" })}
-      >
-        Apply on company site
-        <ArrowUpRight className="size-4" />
-      </a>
+      <div className="flex flex-col gap-1.5">
+        <button
+          type="button"
+          onClick={openExternal}
+          className={buttonVariants({ size: "lg", className: "sm:w-auto" })}
+        >
+          Apply on company site
+          <ArrowUpRight className="size-4" />
+        </button>
+        {state === "guest" && (
+          <Link
+            href={`/login?next=${encodeURIComponent(`/jobs/${jobSlug}`)}`}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            Sign in as a job seeker to track this
+          </Link>
+        )}
+      </div>
     );
   }
 
+  /* ---- on-site apply jobs ---------------------------------------------------- */
   if (applied) {
     return (
       <span className="inline-flex items-center gap-2 rounded-md border border-primary/30 bg-accent px-4 py-2 text-sm font-medium text-primary">
         <Check className="size-4" />
-        Applied — <Link href="/dashboard" className="underline">track it</Link>
+        Applied —{" "}
+        <Link href="/dashboard" className="underline">
+          track it
+        </Link>
       </span>
     );
   }
@@ -72,7 +156,13 @@ export function ApplyCta({
     );
   }
 
-  if (state === "other") return null;
+  if (state === "other") {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Only job seekers can apply to jobs.
+      </p>
+    );
+  }
 
   if (state === "guest") {
     return (
@@ -97,9 +187,8 @@ export function ApplyCta({
           hasCv={hasCv}
           onClose={() => setOpen(false)}
           onApplied={() => {
-            setApplied(true);
             setOpen(false);
-            router.refresh();
+            markApplied("onsite");
           }}
         />
       )}

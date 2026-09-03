@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
 
@@ -64,9 +65,12 @@ export function UsersTable({ users }: { users: AdminUserRow[] }) {
             {filtered.map((u) => (
               <tr key={u.id} className="hover:bg-muted/40">
                 <td className="max-w-52 p-3 sm:max-w-none">
-                  <span className="block truncate font-medium">
+                  <Link
+                    href={`/admin/users/${u.id}`}
+                    className="block truncate font-medium hover:underline"
+                  >
                     {u.fullName || u.email}
-                  </span>
+                  </Link>
                   <span className="block truncate text-xs text-muted-foreground">
                     {u.email}
                   </span>

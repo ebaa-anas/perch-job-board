@@ -44,3 +44,10 @@ export const reportCompanySchema = z.object({
   detail: z.string().trim().max(1000, "Keep it under 1000 characters").optional(),
 });
 export type ReportCompanyValues = z.infer<typeof reportCompanySchema>;
+
+export const reviewSchema = z.object({
+  rating: z.number().int().min(1, "Pick a rating").max(5),
+  title: z.string().trim().max(120, "Keep the title under 120 characters").optional(),
+  body: z.string().trim().max(2000, "Keep it under 2000 characters").optional(),
+});
+export type ReviewValues = z.infer<typeof reviewSchema>;

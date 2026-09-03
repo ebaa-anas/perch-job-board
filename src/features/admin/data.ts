@@ -126,11 +126,22 @@ export interface AdminJobRow {
   applicants: number;
 }
 
+export interface AdminReviewRow {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  status: "visible" | "hidden";
+  createdAt: string;
+  reviewerEmail: string | null;
+}
+
 export interface AdminCompanyDetail {
   company: Company;
   ownerEmail: string | null;
   jobs: AdminJobRow[];
   reports: AdminReportRow[];
+  reviews: AdminReviewRow[];
 }
 
 export const getCompanyAdminDetail = cache(
@@ -147,26 +158,32 @@ export const getCompanyAdminDetail = cache(
       .maybeSingle();
     if (!c) return null;
 
-    const [jobsRes, appsRes, reportsRes, ownerRes, usersRes] = await Promise.all([
-      admin
-        .from("jobs")
-        .select("id, title, slug, status, created_at")
-        .eq("company_id", id)
-        .order("created_at", { ascending: false }),
-      admin
-        .from("applications")
-        .select("job_id, jobs!inner ( company_id )")
-        .eq("jobs.company_id", id),
-      admin
-        .from("company_reports")
-        .select("id, reason, detail, status, created_at, reporter_id")
-        .eq("company_id", id)
-        .order("created_at", { ascending: false }),
-      c.owner_id
-        ? admin.auth.admin.getUserById(c.owner_id)
-        : Promise.resolve({ data: { user: null } }),
-      admin.auth.admin.listUsers({ perPage: 1000 }),
-    ]);
+    const [jobsRes, appsRes, reportsRes, reviewsRes, ownerRes, usersRes] =
+      await Promise.all([
+        admin
+          .from("jobs")
+          .select("id, title, slug, status, created_at")
+          .eq("company_id", id)
+          .order("created_at", { ascending: false }),
+        admin
+          .from("applications")
+          .select("job_id, jobs!inner ( company_id )")
+          .eq("jobs.company_id", id),
+        admin
+          .from("company_reports")
+          .select("id, reason, detail, status, created_at, reporter_id")
+          .eq("company_id", id)
+          .order("created_at", { ascending: false }),
+        admin
+          .from("company_reviews")
+          .select("id, rating, title, body, status, created_at, reviewer_id")
+          .eq("company_id", id)
+          .order("created_at", { ascending: false }),
+        c.owner_id
+          ? admin.auth.admin.getUserById(c.owner_id)
+          : Promise.resolve({ data: { user: null } }),
+        admin.auth.admin.listUsers({ perPage: 1000 }),
+      ]);
 
     const applicantsByJob = new Map<string, number>();
     for (const a of appsRes.data ?? []) {
@@ -212,6 +229,116 @@ export const getCompanyAdminDetail = cache(
         createdAt: r.created_at,
         reporterEmail: emailById.get(r.reporter_id as string) ?? null,
       })),
+      reviews: (reviewsRes.data ?? []).map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        title: r.title,
+        body: r.body,
+        status: r.status as AdminReviewRow["status"],
+        createdAt: r.created_at,
+        reviewerEmail: emailById.get(r.reviewer_id as string) ?? null,
+      })),
+    };
+  },
+);
+
+/* -------------------------------------------------------------------------- */
+/*  User detail                                                                */
+/* -------------------------------------------------------------------------- */
+
+export interface AdminUserDetail {
+  id: string;
+  email: string;
+  role: "seeker" | "recruiter" | "admin" | null;
+  fullName: string | null;
+  createdAt: string;
+  seeker: {
+    headline: string | null;
+    location: string | null;
+    bio: string | null;
+    skills: string[];
+    portfolioUrl: string | null;
+    linkedinUrl: string | null;
+    githubUrl: string | null;
+    hasCv: boolean;
+    cvFilename: string | null;
+  } | null;
+  applications: {
+    id: string;
+    via: "onsite" | "external";
+    createdAt: string;
+    jobTitle: string;
+    companyName: string;
+  }[];
+  company: { id: string; name: string; slug: string } | null;
+}
+
+export const getUserAdminDetail = cache(
+  async (id: string): Promise<AdminUserDetail | null> => {
+    await requireRole("admin");
+    const admin = createAdminClient();
+
+    const { data: authUser } = await admin.auth.admin.getUserById(id);
+    if (!authUser.user) return null;
+
+    const [profileRes, seekerRes, appsRes, companyRes] = await Promise.all([
+      admin.from("profiles").select("role, full_name").eq("id", id).maybeSingle(),
+      admin
+        .from("seeker_profiles")
+        .select(
+          "headline, location, bio, skills, portfolio_url, linkedin_url, github_url, cv_path, cv_filename",
+        )
+        .eq("profile_id", id)
+        .maybeSingle(),
+      admin
+        .from("applications")
+        .select("id, via, created_at, jobs!inner ( title, companies!inner ( name ) )")
+        .eq("seeker_id", id)
+        .order("created_at", { ascending: false }),
+      admin
+        .from("companies")
+        .select("id, name, slug")
+        .eq("owner_id", id)
+        .maybeSingle(),
+    ]);
+
+    const sp = seekerRes.data;
+    type AppRow = {
+      id: string;
+      via: string | null;
+      created_at: string;
+      jobs: { title: string; companies: { name: string } };
+    };
+
+    return {
+      id,
+      email: authUser.user.email ?? "—",
+      role: (profileRes.data?.role as AdminUserDetail["role"]) ?? null,
+      fullName: profileRes.data?.full_name ?? null,
+      createdAt: authUser.user.created_at,
+      seeker: sp
+        ? {
+            headline: sp.headline,
+            location: sp.location,
+            bio: sp.bio,
+            skills: sp.skills ?? [],
+            portfolioUrl: sp.portfolio_url,
+            linkedinUrl: sp.linkedin_url,
+            githubUrl: sp.github_url,
+            hasCv: Boolean(sp.cv_path),
+            cvFilename: sp.cv_filename,
+          }
+        : null,
+      applications: ((appsRes.data as unknown as AppRow[] | null) ?? []).map((a) => ({
+        id: a.id,
+        via: (a.via as "onsite" | "external") ?? "onsite",
+        createdAt: a.created_at,
+        jobTitle: a.jobs.title,
+        companyName: a.jobs.companies.name,
+      })),
+      company: companyRes.data
+        ? { id: companyRes.data.id, name: companyRes.data.name, slug: companyRes.data.slug }
+        : null,
     };
   },
 );
