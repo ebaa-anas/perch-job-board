@@ -220,8 +220,18 @@ function friendlyAuthError(message: string): string {
   if (m.includes("password should be at least")) {
     return "Password must be at least 8 characters.";
   }
-  if (m.includes("unable to validate email address")) {
+  if (
+    m.includes("unable to validate email address") ||
+    m.includes("email address") && m.includes("invalid") ||
+    m.includes("email_address_invalid")
+  ) {
     return "That email address looks invalid.";
+  }
+  if (m.includes("signups not allowed") || m.includes("signup is disabled")) {
+    return "New sign-ups are currently closed.";
+  }
+  if (m.includes("sending confirmation email") || m.includes("error sending")) {
+    return "We couldn't send the confirmation email. Try again shortly.";
   }
   if (m.includes("rate limit") || m.includes("too many requests")) {
     return "Too many attempts. Wait a minute and try again.";
