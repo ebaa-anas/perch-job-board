@@ -1,8 +1,9 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Menu, X } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -15,6 +16,14 @@ import type { SessionProfile } from "@/features/auth/session";
 export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
   const pathname = usePathname();
   const { count, hydrated } = useSavedJobs();
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [seenPath, setSeenPath] = React.useState(pathname);
+
+  // Close the mobile menu on navigation (state adjusted during render, not in an effect).
+  if (pathname !== seenPath) {
+    setSeenPath(pathname);
+    setMenuOpen(false);
+  }
 
   const role = profile?.role ?? null;
   const isSeeker = role === "seeker";
@@ -35,8 +44,8 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/" aria-label="Perch home">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:gap-4 sm:px-6">
+        <Link href="/" aria-label="Perch home" className="shrink-0">
           <Wordmark />
         </Link>
 
@@ -95,23 +104,74 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
               role={role ?? "seeker"}
             />
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="hidden items-center gap-1.5 sm:flex">
               <Link
                 href="/login"
                 className={buttonVariants({ variant: "ghost", size: "sm" })}
               >
                 Log in
               </Link>
-              <Link
-                href="/signup"
-                className={buttonVariants({ size: "sm" })}
-              >
+              <Link href="/signup" className={buttonVariants({ size: "sm" })}>
                 Sign up
               </Link>
             </div>
           )}
+
+          <button
+            type="button"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "icon" }),
+              "sm:hidden",
+            )}
+          >
+            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <nav className="border-t border-border bg-background px-4 py-3 sm:hidden">
+          <ul className="flex flex-col gap-1">
+            {nav.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive(item.href)
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {item.label}
+                  {item.href === "/saved-jobs" && hydrated && count > 0 && (
+                    <span className="rounded-full bg-accent px-1.5 text-xs font-semibold text-accent-foreground">
+                      {count}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          {!isAuthed && (
+            <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+              <Link
+                href="/login"
+                className={buttonVariants({ variant: "outline", className: "w-full" })}
+              >
+                Log in
+              </Link>
+              <Link href="/signup" className={buttonVariants({ className: "w-full" })}>
+                Sign up
+              </Link>
+            </div>
+          )}
+        </nav>
+      )}
     </header>
   );
 }

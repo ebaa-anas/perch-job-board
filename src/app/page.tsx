@@ -52,7 +52,7 @@ export default async function HomePage() {
             <span className="size-1.5 rounded-full bg-primary" />
             {jobs.length} open roles from {companies.length} companies
           </span>
-          <h1 className="font-display max-w-3xl text-5xl text-balance sm:text-6xl md:text-7xl">
+          <h1 className="font-display max-w-3xl text-4xl text-balance sm:text-6xl md:text-7xl">
             Find where you land next
           </h1>
           <p className="max-w-xl text-pretty text-muted-foreground sm:text-lg">

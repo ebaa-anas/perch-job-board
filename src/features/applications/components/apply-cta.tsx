@@ -156,7 +156,7 @@ function ApplyDialog({
         role="dialog"
         aria-modal
         aria-label="Apply to this job"
-        className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl"
+        className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-xl"
       >
         <h2 className="font-display text-2xl">Apply</h2>
         <p className="mt-1 text-sm text-muted-foreground">

@@ -98,7 +98,7 @@ function ReportDialog({
         role="dialog"
         aria-modal
         aria-label="Report this company"
-        className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl"
+        className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-xl"
       >
         {done ? (
           <div className="space-y-3 text-center">
