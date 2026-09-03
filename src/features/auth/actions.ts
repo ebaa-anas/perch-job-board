@@ -233,8 +233,14 @@ function friendlyAuthError(message: string): string {
   if (m.includes("sending confirmation email") || m.includes("error sending")) {
     return "We couldn't send the confirmation email. Try again shortly.";
   }
+  if (
+    (m.includes("email") && m.includes("rate limit")) ||
+    m.includes("over_email_send_rate_limit")
+  ) {
+    return "The email service is rate-limited right now, so we can't send a confirmation link. Please try again in a little while.";
+  }
   if (m.includes("rate limit") || m.includes("too many requests")) {
-    return "Too many attempts. Wait a minute and try again.";
+    return "Too many attempts. Please wait a bit and try again.";
   }
   if (m.includes("new password should be different")) {
     return "Your new password must be different from the old one.";
