@@ -37,6 +37,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const profile = await getProfile();
   const isSeeker = profile?.role === "seeker";
+  const canSave = !profile || profile.role === "seeker";
   const savedIds = isSeeker ? await listSavedJobIds() : [];
 
   return (
@@ -50,7 +51,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ThemeProvider>
-          <SavedJobsProvider authedSeeker={isSeeker} serverIds={savedIds}>
+          <SavedJobsProvider
+            authedSeeker={isSeeker}
+            serverIds={savedIds}
+            canSave={canSave}
+          >
             <SiteHeader profile={profile} />
             <main className="flex-1">{children}</main>
             <SiteFooter />

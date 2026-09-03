@@ -2,15 +2,12 @@ import { cache } from "react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/features/auth/session";
+import type { Company } from "@/features/companies/data";
+import type { ReportReason } from "@/features/companies/schema";
 
-export interface AdminJobRow {
-  id: string;
-  title: string;
-  slug: string;
-  status: "published" | "draft" | "closed";
-  companyName: string;
-  createdAt: string;
-}
+/* -------------------------------------------------------------------------- */
+/*  Users                                                                      */
+/* -------------------------------------------------------------------------- */
 
 export interface AdminUserRow {
   id: string;
@@ -19,62 +16,6 @@ export interface AdminUserRow {
   fullName: string | null;
   createdAt: string;
 }
-
-export interface AdminOverview {
-  users: number;
-  jobs: number;
-  publishedJobs: number;
-  companies: number;
-  applications: number;
-}
-
-export const getAdminOverview = cache(async (): Promise<AdminOverview> => {
-  await requireRole("admin");
-  const admin = createAdminClient();
-  const [users, jobs, published, companies, applications] = await Promise.all([
-    admin.from("profiles").select("id", { count: "exact", head: true }),
-    admin.from("jobs").select("id", { count: "exact", head: true }),
-    admin
-      .from("jobs")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "published"),
-    admin.from("companies").select("id", { count: "exact", head: true }),
-    admin.from("applications").select("id", { count: "exact", head: true }),
-  ]);
-  return {
-    users: users.count ?? 0,
-    jobs: jobs.count ?? 0,
-    publishedJobs: published.count ?? 0,
-    companies: companies.count ?? 0,
-    applications: applications.count ?? 0,
-  };
-});
-
-export const getAllJobsAdmin = cache(async (): Promise<AdminJobRow[]> => {
-  await requireRole("admin");
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("jobs")
-    .select("id, title, slug, status, created_at, companies!inner ( name )")
-    .order("created_at", { ascending: false });
-
-  type Row = {
-    id: string;
-    title: string;
-    slug: string;
-    status: AdminJobRow["status"];
-    created_at: string;
-    companies: { name: string };
-  };
-  return (data as unknown as Row[] | null ?? []).map((r) => ({
-    id: r.id,
-    title: r.title,
-    slug: r.slug,
-    status: r.status,
-    companyName: r.companies.name,
-    createdAt: r.created_at,
-  }));
-});
 
 export const getAllUsersAdmin = cache(async (): Promise<AdminUserRow[]> => {
   await requireRole("admin");
@@ -98,5 +39,290 @@ export const getAllUsersAdmin = cache(async (): Promise<AdminUserRow[]> => {
     role: byId.get(u.id)?.role ?? null,
     fullName: byId.get(u.id)?.fullName ?? null,
     createdAt: u.created_at,
+  }));
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Companies                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export interface AdminCompanyRow {
+  id: string;
+  name: string;
+  slug: string;
+  ownerEmail: string | null;
+  jobs: number;
+  published: number;
+  applicants: number;
+  openReports: number;
+  suspendedAt: string | null;
+  createdAt: string;
+}
+
+export const getCompaniesAdmin = cache(async (): Promise<AdminCompanyRow[]> => {
+  await requireRole("admin");
+  const admin = createAdminClient();
+
+  const [companiesRes, jobsRes, appsRes, reportsRes, usersRes] = await Promise.all([
+    admin
+      .from("companies")
+      .select("id, name, slug, owner_id, suspended_at, created_at")
+      .order("created_at", { ascending: false }),
+    admin.from("jobs").select("company_id, status"),
+    admin.from("applications").select("jobs!inner ( company_id )"),
+    admin.from("company_reports").select("company_id, status"),
+    admin.auth.admin.listUsers({ perPage: 1000 }),
+  ]);
+
+  const emailById = new Map(
+    (usersRes.data?.users ?? []).map((u) => [u.id, u.email ?? null]),
+  );
+
+  const jobsByCompany = new Map<string, { total: number; published: number }>();
+  for (const j of jobsRes.data ?? []) {
+    const row = j as { company_id: string; status: string };
+    const acc = jobsByCompany.get(row.company_id) ?? { total: 0, published: 0 };
+    acc.total += 1;
+    if (row.status === "published") acc.published += 1;
+    jobsByCompany.set(row.company_id, acc);
+  }
+
+  const applicantsByCompany = new Map<string, number>();
+  for (const a of appsRes.data ?? []) {
+    const id = (a as { jobs: { company_id: string } }).jobs.company_id;
+    applicantsByCompany.set(id, (applicantsByCompany.get(id) ?? 0) + 1);
+  }
+
+  const openReportsByCompany = new Map<string, number>();
+  for (const r of reportsRes.data ?? []) {
+    const row = r as { company_id: string; status: string };
+    if (row.status !== "open") continue;
+    openReportsByCompany.set(
+      row.company_id,
+      (openReportsByCompany.get(row.company_id) ?? 0) + 1,
+    );
+  }
+
+  return (companiesRes.data ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    ownerEmail: c.owner_id ? emailById.get(c.owner_id) ?? null : null,
+    jobs: jobsByCompany.get(c.id)?.total ?? 0,
+    published: jobsByCompany.get(c.id)?.published ?? 0,
+    applicants: applicantsByCompany.get(c.id) ?? 0,
+    openReports: openReportsByCompany.get(c.id) ?? 0,
+    suspendedAt: c.suspended_at,
+    createdAt: c.created_at,
+  }));
+});
+
+export interface AdminJobRow {
+  id: string;
+  title: string;
+  slug: string;
+  status: "published" | "draft" | "closed";
+  createdAt: string;
+  applicants: number;
+}
+
+export interface AdminCompanyDetail {
+  company: Company;
+  ownerEmail: string | null;
+  jobs: AdminJobRow[];
+  reports: AdminReportRow[];
+}
+
+export const getCompanyAdminDetail = cache(
+  async (id: string): Promise<AdminCompanyDetail | null> => {
+    await requireRole("admin");
+    const admin = createAdminClient();
+
+    const { data: c } = await admin
+      .from("companies")
+      .select(
+        "id, owner_id, name, slug, tagline, description, website, logo_path, logo_color, suspended_at, suspended_reason",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    if (!c) return null;
+
+    const [jobsRes, appsRes, reportsRes, ownerRes, usersRes] = await Promise.all([
+      admin
+        .from("jobs")
+        .select("id, title, slug, status, created_at")
+        .eq("company_id", id)
+        .order("created_at", { ascending: false }),
+      admin
+        .from("applications")
+        .select("job_id, jobs!inner ( company_id )")
+        .eq("jobs.company_id", id),
+      admin
+        .from("company_reports")
+        .select("id, reason, detail, status, created_at, reporter_id")
+        .eq("company_id", id)
+        .order("created_at", { ascending: false }),
+      c.owner_id
+        ? admin.auth.admin.getUserById(c.owner_id)
+        : Promise.resolve({ data: { user: null } }),
+      admin.auth.admin.listUsers({ perPage: 1000 }),
+    ]);
+
+    const applicantsByJob = new Map<string, number>();
+    for (const a of appsRes.data ?? []) {
+      const jid = (a as { job_id: string }).job_id;
+      applicantsByJob.set(jid, (applicantsByJob.get(jid) ?? 0) + 1);
+    }
+
+    const emailById = new Map(
+      (usersRes.data?.users ?? []).map((u) => [u.id, u.email ?? null]),
+    );
+
+    return {
+      company: {
+        id: c.id,
+        ownerId: c.owner_id,
+        name: c.name,
+        slug: c.slug,
+        tagline: c.tagline,
+        description: c.description,
+        website: c.website,
+        logoPath: c.logo_path,
+        logoColor: c.logo_color,
+        suspendedAt: c.suspended_at,
+        suspendedReason: c.suspended_reason,
+      },
+      ownerEmail: ownerRes.data.user?.email ?? null,
+      jobs: (jobsRes.data ?? []).map((j) => ({
+        id: j.id,
+        title: j.title,
+        slug: j.slug,
+        status: j.status as AdminJobRow["status"],
+        createdAt: j.created_at,
+        applicants: applicantsByJob.get(j.id) ?? 0,
+      })),
+      reports: (reportsRes.data ?? []).map((r) => ({
+        id: r.id,
+        companyId: id,
+        companyName: c.name,
+        companySlug: c.slug,
+        reason: r.reason as ReportReason,
+        detail: r.detail,
+        status: r.status as AdminReportRow["status"],
+        createdAt: r.created_at,
+        reporterEmail: emailById.get(r.reporter_id as string) ?? null,
+      })),
+    };
+  },
+);
+
+/* -------------------------------------------------------------------------- */
+/*  Reports                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export interface AdminReportRow {
+  id: string;
+  companyId: string;
+  companyName: string;
+  companySlug: string;
+  reason: ReportReason;
+  detail: string | null;
+  status: "open" | "reviewed" | "dismissed";
+  createdAt: string;
+  reporterEmail: string | null;
+}
+
+export const getReportsAdmin = cache(
+  async (
+    status?: "open" | "reviewed" | "dismissed",
+  ): Promise<AdminReportRow[]> => {
+    await requireRole("admin");
+    const admin = createAdminClient();
+
+    let query = admin
+      .from("company_reports")
+      .select(
+        "id, company_id, reason, detail, status, created_at, reporter_id, companies!inner ( name, slug )",
+      )
+      .order("created_at", { ascending: false });
+    if (status) query = query.eq("status", status);
+    const { data } = await query;
+
+    const reporterIds = Array.from(
+      new Set((data ?? []).map((r) => r.reporter_id as string)),
+    );
+    const emails = new Map<string, string | null>();
+    if (reporterIds.length > 0) {
+      const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
+      for (const u of users?.users ?? []) {
+        if (reporterIds.includes(u.id)) emails.set(u.id, u.email ?? null);
+      }
+    }
+
+    type Row = {
+      id: string;
+      company_id: string;
+      reason: string;
+      detail: string | null;
+      status: string;
+      created_at: string;
+      reporter_id: string;
+      companies: { name: string; slug: string };
+    };
+
+    return (data as unknown as Row[] | null ?? []).map((r) => ({
+      id: r.id,
+      companyId: r.company_id,
+      companyName: r.companies.name,
+      companySlug: r.companies.slug,
+      reason: r.reason as ReportReason,
+      detail: r.detail,
+      status: r.status as AdminReportRow["status"],
+      createdAt: r.created_at,
+      reporterEmail: emails.get(r.reporter_id) ?? null,
+    }));
+  },
+);
+
+/* -------------------------------------------------------------------------- */
+/*  Settings — admin allow-list + audit log                                    */
+/* -------------------------------------------------------------------------- */
+
+export const getAdminEmails = cache(async (): Promise<string[]> => {
+  await requireRole("admin");
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("admin_emails")
+    .select("email")
+    .order("email");
+  return (data ?? []).map((r) => r.email as string);
+});
+
+export interface AuditEntry {
+  id: string;
+  actorEmail: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  detail: unknown;
+  createdAt: string;
+}
+
+export const getAuditLog = cache(async (limit = 50): Promise<AuditEntry[]> => {
+  await requireRole("admin");
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("admin_audit_log")
+    .select("id, actor_email, action, target_type, target_id, detail, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    actorEmail: r.actor_email,
+    action: r.action,
+    targetType: r.target_type,
+    targetId: r.target_id,
+    detail: r.detail,
+    createdAt: r.created_at,
   }));
 });

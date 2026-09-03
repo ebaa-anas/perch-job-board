@@ -18,6 +18,8 @@ interface SavedJobsContextValue {
   savedIds: string[];
   count: number;
   hydrated: boolean;
+  /** false for recruiters / admins — saving is a seeker (or guest) feature. */
+  canSave: boolean;
   isSaved: (jobId: string) => boolean;
   toggle: (jobId: string) => void;
   remove: (jobId: string) => void;
@@ -30,10 +32,12 @@ export function SavedJobsProvider({
   children,
   authedSeeker = false,
   serverIds = [],
+  canSave = true,
 }: {
   children: React.ReactNode;
   authedSeeker?: boolean;
   serverIds?: string[];
+  canSave?: boolean;
 }) {
   // Starts empty so the server HTML and the first client render agree; the real
   // list is revealed after mount (see `hydrated`).
@@ -147,12 +151,13 @@ export function SavedJobsProvider({
       savedIds,
       count: savedIds.length,
       hydrated,
+      canSave,
       isSaved,
       toggle,
       remove,
       clear,
     }),
-    [savedIds, hydrated, isSaved, toggle, remove, clear],
+    [savedIds, hydrated, canSave, isSaved, toggle, remove, clear],
   );
 
   return (

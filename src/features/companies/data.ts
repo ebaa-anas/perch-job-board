@@ -14,10 +14,12 @@ export interface Company {
   website: string | null;
   logoPath: string | null;
   logoColor: string;
+  suspendedAt: string | null;
+  suspendedReason: string | null;
 }
 
 const COMPANY_COLUMNS =
-  "id, owner_id, name, slug, tagline, description, website, logo_path, logo_color";
+  "id, owner_id, name, slug, tagline, description, website, logo_path, logo_color, suspended_at, suspended_reason";
 
 type CompanyRow = {
   id: string;
@@ -29,6 +31,8 @@ type CompanyRow = {
   website: string | null;
   logo_path: string | null;
   logo_color: string;
+  suspended_at: string | null;
+  suspended_reason: string | null;
 };
 
 function mapCompany(row: CompanyRow): Company {
@@ -42,6 +46,8 @@ function mapCompany(row: CompanyRow): Company {
     website: row.website,
     logoPath: row.logo_path,
     logoColor: row.logo_color,
+    suspendedAt: row.suspended_at,
+    suspendedReason: row.suspended_reason,
   };
 }
 

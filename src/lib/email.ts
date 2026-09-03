@@ -83,6 +83,29 @@ export async function sendNewApplicantEmail(input: {
   });
 }
 
+export async function sendAdminMessageEmail(input: {
+  to: string;
+  subject: string;
+  body: string;
+}): Promise<SendResult> {
+  const paragraphs = input.body
+    .split(/\n{2,}/)
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br/>")}</p>`)
+    .join("");
+  return send({
+    to: input.to,
+    subject: input.subject,
+    text: input.body,
+    html: `
+      <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1b1a16">
+        ${paragraphs}
+        <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
+        <p style="color:#888;font-size:12px">Sent by a Perch administrator.</p>
+      </div>
+    `,
+  });
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Globe } from "lucide-react";
+import { Globe, ShieldAlert } from "lucide-react";
 
 import { CompanyLogo } from "@/features/jobs/components/company-logo";
 import { JobList } from "@/features/jobs/components/job-list";
 import { getCompanyBySlug, getCompanyJobs } from "@/features/companies/data";
+import { getProfile } from "@/features/auth/session";
+import { ReportCompanyButton } from "@/features/companies/components/report-company-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +18,7 @@ export async function generateMetadata({
   if (!company) return { title: "Company not found" };
   return {
     title: company.name,
-    description:
-      company.tagline ?? `Open roles at ${company.name} on Perch.`,
+    description: company.tagline ?? `Open roles at ${company.name} on Perch.`,
   };
 }
 
@@ -25,13 +26,34 @@ export default async function CompanyPublicPage({
   params,
 }: PageProps<"/companies/[slug]">) {
   const { slug } = await params;
-  const company = await getCompanyBySlug(slug);
+  const [company, profile] = await Promise.all([
+    getCompanyBySlug(slug),
+    getProfile(),
+  ]);
   if (!company) notFound();
 
-  const jobs = await getCompanyJobs(company.id);
+  const isAdmin = profile?.role === "admin";
+  const isOwner = Boolean(profile) && profile?.id === company.ownerId;
+  const suspended = Boolean(company.suspendedAt);
+  const showJobs = !suspended || isAdmin || isOwner;
+  const jobs = showJobs ? await getCompanyJobs(company.id) : [];
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+      {suspended && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-highlight/30 bg-highlight/10 p-4 text-sm">
+          <ShieldAlert className="mt-0.5 size-5 shrink-0 text-highlight" />
+          <div>
+            <p className="font-medium">This company is under review</p>
+            <p className="text-muted-foreground">
+              {isOwner
+                ? `Your company is suspended: ${company.suspendedReason}. New and existing posts are hidden from the public board until an admin reinstates it.`
+                : "Its job posts are hidden while our team looks into it."}
+            </p>
+          </div>
+        </div>
+      )}
+
       <header className="flex flex-col gap-5 border-b border-border pb-8 sm:flex-row sm:items-start">
         <CompanyLogo
           company={company.name}
@@ -44,17 +66,26 @@ export default async function CompanyPublicPage({
           {company.tagline && (
             <p className="mt-1 text-muted-foreground">{company.tagline}</p>
           )}
-          {company.website && (
-            <a
-              href={company.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-            >
-              <Globe className="size-4" />
-              {company.website.replace(/^https?:\/\//, "")}
-            </a>
-          )}
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+            {company.website && (
+              <a
+                href={company.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+              >
+                <Globe className="size-4" />
+                {company.website.replace(/^https?:\/\//, "")}
+              </a>
+            )}
+            {!isOwner && (
+              <ReportCompanyButton
+                companyId={company.id}
+                companySlug={company.slug}
+                canReport={Boolean(profile)}
+              />
+            )}
+          </div>
         </div>
       </header>
 
@@ -64,19 +95,21 @@ export default async function CompanyPublicPage({
         </p>
       )}
 
-      <section className="mt-10">
-        <h2 className="font-display text-2xl">
-          Open roles{" "}
-          <span className="text-muted-foreground">({jobs.length})</span>
-        </h2>
-        <div className="mt-4">
-          <JobList
-            jobs={jobs}
-            emptyTitle="No open roles right now"
-            emptyDescription="This company hasn't published any jobs yet."
-          />
-        </div>
-      </section>
+      {showJobs && (
+        <section className="mt-10">
+          <h2 className="font-display text-2xl">
+            Open roles{" "}
+            <span className="text-muted-foreground">({jobs.length})</span>
+          </h2>
+          <div className="mt-4">
+            <JobList
+              jobs={jobs}
+              emptyTitle="No open roles right now"
+              emptyDescription="This company hasn't published any jobs yet."
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

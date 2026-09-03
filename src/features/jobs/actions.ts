@@ -29,11 +29,14 @@ function zodFieldErrors(issues: { path: PropertyKey[]; message: string }[]) {
 async function ownCompany(supabase: Awaited<ReturnType<typeof createClient>>, ownerId: string) {
   const { data } = await supabase
     .from("companies")
-    .select("id, slug")
+    .select("id, slug, suspended_at")
     .eq("owner_id", ownerId)
     .maybeSingle();
   return data;
 }
+
+const SUSPENDED_MSG =
+  "Your company is suspended and can't post or publish jobs. Contact support if you think this is a mistake.";
 
 function toRow(input: JobEditorInput) {
   return {
@@ -79,6 +82,7 @@ export async function createJob(
   if (!company) {
     return { ok: false, error: "Create your company profile before posting a job." };
   }
+  if (company.suspended_at) return { ok: false, error: SUSPENDED_MSG };
 
   const root = slugify(parsed.data.title) || "role";
   const { data: existing } = await supabase
@@ -142,11 +146,15 @@ export async function setJobStatus(
   id: string,
   status: JobStatus,
 ): Promise<ActionResult> {
-  await requireRole("recruiter");
+  const profile = await requireRole("recruiter");
   if (!JOB_STATUSES.includes(status)) {
     return { ok: false, error: "Unknown status." };
   }
   const supabase = await createClient();
+  if (status === "published") {
+    const company = await ownCompany(supabase, profile.id);
+    if (company?.suspended_at) return { ok: false, error: SUSPENDED_MSG };
+  }
   const { data, error } = await supabase
     .from("jobs")
     .update({ status, updated_at: new Date().toISOString() })

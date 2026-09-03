@@ -21,9 +21,12 @@ export function SaveJobButton({
   compact = false,
   className,
 }: SaveJobButtonProps) {
-  const { isSaved, toggle, hydrated } = useSavedJobs();
+  const { isSaved, toggle, hydrated, canSave } = useSavedJobs();
   const saved = hydrated && isSaved(jobId);
   const Icon = saved ? BookmarkCheck : Bookmark;
+
+  // Recruiters / admins don't get a save control.
+  if (!canSave) return null;
 
   const handleClick = (event: React.MouseEvent) => {
     event.preventDefault();

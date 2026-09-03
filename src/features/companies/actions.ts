@@ -3,9 +3,14 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireRole } from "@/features/auth/session";
+import { requireRole, requireUser } from "@/features/auth/session";
 import { pickFreeSlug, slugify } from "@/lib/slug";
-import { companySchema, type CompanyValues } from "@/features/companies/schema";
+import {
+  companySchema,
+  reportCompanySchema,
+  type CompanyValues,
+  type ReportCompanyValues,
+} from "@/features/companies/schema";
 
 type ActionResult<T> =
   | { ok: true; data: T }
@@ -128,4 +133,42 @@ export async function removeCompanyLogo(): Promise<ActionResult<null>> {
   if (error) return { ok: false, error: error.message };
   revalidatePath("/company");
   return { ok: true, data: null };
+}
+
+/** Any signed-in user can flag a company. One report per user per company
+ *  (unique constraint); re-reporting updates the reason/detail and reopens it. */
+export async function reportCompany(
+  companyId: string,
+  values: ReportCompanyValues,
+): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireUser();
+  const parsed = reportCompanySchema.safeParse(values);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("owner_id")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (!company) return { ok: false, error: "Company not found." };
+  if (company.owner_id === user.id) {
+    return { ok: false, error: "You can't report your own company." };
+  }
+
+  const { error } = await supabase.from("company_reports").upsert(
+    {
+      company_id: companyId,
+      reporter_id: user.id,
+      reason: parsed.data.reason,
+      detail: parsed.data.detail || null,
+      status: "open",
+    },
+    { onConflict: "company_id,reporter_id" },
+  );
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }

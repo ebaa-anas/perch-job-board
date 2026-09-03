@@ -34,6 +34,7 @@ export default async function DashboardPage() {
   const profile = await getProfile();
   if (!profile) redirect("/login");
   if (!profile.role) redirect("/onboarding");
+  if (profile.role === "admin") redirect("/admin");
 
   const firstName = profile.fullName?.split(/\s+/)[0];
   const greeting = firstName ? `Welcome back, ${firstName}` : "Welcome back";

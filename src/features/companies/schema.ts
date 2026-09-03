@@ -21,3 +21,26 @@ export const companySchema = z.object({
 });
 
 export type CompanyValues = z.infer<typeof companySchema>;
+
+export const REPORT_REASONS = [
+  "spam",
+  "misleading",
+  "inappropriate",
+  "scam",
+  "other",
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  spam: "Spam / posting junk",
+  misleading: "Misleading job posts",
+  inappropriate: "Inappropriate content",
+  scam: "Looks like a scam",
+  other: "Something else",
+};
+
+export const reportCompanySchema = z.object({
+  reason: z.enum(REPORT_REASONS, { error: "Pick a reason" }),
+  detail: z.string().trim().max(1000, "Keep it under 1000 characters").optional(),
+});
+export type ReportCompanyValues = z.infer<typeof reportCompanySchema>;

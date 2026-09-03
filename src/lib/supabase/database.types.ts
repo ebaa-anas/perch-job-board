@@ -39,6 +39,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          detail: Json | null
+          id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_emails: {
         Row: {
           email: string
@@ -106,6 +147,8 @@ export type Database = {
           name: string
           owner_id: string | null
           slug: string
+          suspended_at: string | null
+          suspended_reason: string | null
           tagline: string | null
           website: string | null
         }
@@ -118,6 +161,8 @@ export type Database = {
           name: string
           owner_id?: string | null
           slug: string
+          suspended_at?: string | null
+          suspended_reason?: string | null
           tagline?: string | null
           website?: string | null
         }
@@ -130,6 +175,8 @@ export type Database = {
           name?: string
           owner_id?: string | null
           slug?: string
+          suspended_at?: string | null
+          suspended_reason?: string | null
           tagline?: string | null
           website?: string | null
         }
@@ -138,6 +185,51 @@ export type Database = {
             foreignKeyName: "companies_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_reports: {
+        Row: {
+          company_id: string
+          created_at: string
+          detail: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -329,8 +421,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      company_suspended: { Args: { target: string }; Returns: boolean }
       current_user_role: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      owns_company: { Args: { target: string }; Returns: boolean }
       owns_job: { Args: { target_job: string }; Returns: boolean }
     }
     Enums: {

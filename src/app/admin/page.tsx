@@ -1,50 +1,69 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import {
-  getAdminOverview,
-  getAllJobsAdmin,
-  getAllUsersAdmin,
-} from "@/features/admin/data";
-import { AdminConsole } from "@/features/admin/components/admin-console";
+import { getAdminAnalytics } from "@/features/admin/analytics";
+import { AreaChart, BarList } from "@/features/admin/components/charts";
 
-export const metadata: Metadata = { title: "Admin" };
+export const metadata: Metadata = { title: "Admin · Overview" };
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
-  const [overview, jobs, users] = await Promise.all([
-    getAdminOverview(),
-    getAllJobsAdmin(),
-    getAllUsersAdmin(),
-  ]);
+export default async function AdminOverviewPage() {
+  const a = await getAdminAnalytics(30);
 
-  const stats = [
-    { label: "Users", value: overview.users },
-    { label: "Companies", value: overview.companies },
-    { label: "Jobs", value: overview.jobs },
-    { label: "Published", value: overview.publishedJobs },
-    { label: "Applications", value: overview.applications },
+  const kpis = [
+    { label: "Users", value: a.totals.users, sub: `${a.totals.seekers} seekers · ${a.totals.recruiters} recruiters` },
+    { label: "Companies", value: a.totals.companies, sub: `${a.totals.suspendedCompanies} suspended` },
+    { label: "Jobs", value: a.totals.jobs, sub: `${a.totals.publishedJobs} live` },
+    { label: "Applications", value: a.totals.applications, sub: "all time" },
+    { label: "Open reports", value: a.totals.openReports, sub: "need review", href: "/admin/reports" },
   ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <h1 className="font-display text-4xl">Admin</h1>
-      <p className="mt-1 text-muted-foreground">
-        Moderation tools. Deletions are permanent and cascade.
-      </p>
-
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        {stats.map((s) => (
-          <div
-            key={s.label}
-            className="rounded-xl border border-border bg-card p-4 text-center shadow-sm"
-          >
-            <p className="font-display text-2xl">{s.value}</p>
-            <p className="text-xs text-muted-foreground">{s.label}</p>
-          </div>
-        ))}
+    <div className="space-y-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {kpis.map((k) => {
+          const body = (
+            <>
+              <p className="font-display text-3xl">{k.value}</p>
+              <p className="text-xs font-medium">{k.label}</p>
+              <p className="mt-0.5 text-[0.7rem] text-muted-foreground">{k.sub}</p>
+            </>
+          );
+          return k.href ? (
+            <Link
+              key={k.label}
+              href={k.href}
+              className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary"
+            >
+              {body}
+            </Link>
+          ) : (
+            <div key={k.label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+              {body}
+            </div>
+          );
+        })}
       </div>
 
-      <AdminConsole jobs={jobs} users={users} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <AreaChart points={a.signups} label="New sign-ups" />
+        <AreaChart points={a.jobs} label="Jobs posted" accent="var(--color-highlight)" />
+        <AreaChart points={a.applications} label="Applications" accent="var(--color-ring)" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <BarList
+          label="Top companies by applicants"
+          items={a.topCompanies.map((c) => ({ label: c.name, value: c.applicants }))}
+        />
+        <BarList
+          label="Top companies by jobs"
+          items={a.topCompanies
+            .slice()
+            .sort((x, y) => y.jobs - x.jobs)
+            .map((c) => ({ label: c.name, value: c.jobs }))}
+        />
+      </div>
     </div>
   );
 }
