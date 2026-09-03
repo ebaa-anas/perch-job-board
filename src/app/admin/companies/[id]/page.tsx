@@ -95,7 +95,7 @@ export default async function AdminCompanyDetailPage({
         <h3 className="font-display text-xl">
           Jobs <span className="text-muted-foreground">({jobs.length})</span>
         </h3>
-        <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-border">
               {jobs.map((j) => (
@@ -104,10 +104,17 @@ export default async function AdminCompanyDetailPage({
                     <Link href={`/jobs/${j.slug}`} className="font-medium hover:underline">
                       {j.title}
                     </Link>
+                    <span className="mt-0.5 block text-xs text-muted-foreground sm:hidden">
+                      {j.applicants} applied · {formatDate(j.createdAt)}
+                    </span>
                   </td>
                   <td className="p-3 capitalize text-muted-foreground">{j.status}</td>
-                  <td className="p-3 text-right tabular-nums">{j.applicants} applied</td>
-                  <td className="p-3 text-muted-foreground">{formatDate(j.createdAt)}</td>
+                  <td className="hidden p-3 text-right tabular-nums sm:table-cell">
+                    {j.applicants} applied
+                  </td>
+                  <td className="hidden p-3 text-muted-foreground sm:table-cell">
+                    {formatDate(j.createdAt)}
+                  </td>
                 </tr>
               ))}
               {jobs.length === 0 && (

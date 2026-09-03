@@ -4,7 +4,7 @@ import { TriangleAlert } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 
-export const metadata: Metadata = { title: "Link expired" };
+export const metadata: Metadata = { title: "Link expired", robots: { index: false, follow: false } };
 
 export default function AuthCodeErrorPage() {
   return (

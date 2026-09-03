@@ -50,25 +50,31 @@ export function UsersTable({ users }: { users: AdminUserRow[] }) {
         className="max-w-sm"
       />
       {err && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
-      <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
+      <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b border-border text-left text-xs text-muted-foreground">
             <tr>
               <th className="p-3 font-medium">User</th>
               <th className="p-3 font-medium">Role</th>
-              <th className="p-3 font-medium">Joined</th>
+              <th className="hidden p-3 font-medium sm:table-cell">Joined</th>
               <th className="p-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {filtered.map((u) => (
               <tr key={u.id} className="hover:bg-muted/40">
-                <td className="p-3">
-                  <span className="block font-medium">{u.fullName || u.email}</span>
-                  <span className="block text-xs text-muted-foreground">{u.email}</span>
+                <td className="max-w-52 p-3 sm:max-w-none">
+                  <span className="block truncate font-medium">
+                    {u.fullName || u.email}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {u.email}
+                  </span>
                 </td>
                 <td className="p-3 capitalize text-muted-foreground">{u.role ?? "—"}</td>
-                <td className="p-3 text-muted-foreground">{formatDate(u.createdAt)}</td>
+                <td className="hidden p-3 text-muted-foreground sm:table-cell">
+                  {formatDate(u.createdAt)}
+                </td>
                 <td className="p-3 text-right">
                   <Button
                     size="sm"

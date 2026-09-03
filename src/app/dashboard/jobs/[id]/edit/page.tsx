@@ -7,7 +7,7 @@ import { getOwnJob } from "@/features/jobs/data";
 import { JobEditorForm } from "@/features/jobs/components/job-editor-form";
 import type { JobEditorValues } from "@/features/jobs/schema";
 
-export const metadata: Metadata = { title: "Edit job" };
+export const metadata: Metadata = { title: "Edit job", robots: { index: false, follow: false } };
 
 export default async function EditJobPage({
   params,

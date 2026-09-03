@@ -6,7 +6,7 @@ import { requireRole } from "@/features/auth/session";
 import { getOwnCompany } from "@/features/companies/data";
 import { JobEditorForm } from "@/features/jobs/components/job-editor-form";
 
-export const metadata: Metadata = { title: "Post a job" };
+export const metadata: Metadata = { title: "Post a job", robots: { index: false, follow: false } };
 
 export default async function NewJobPage() {
   await requireRole("recruiter", "/dashboard/jobs/new");

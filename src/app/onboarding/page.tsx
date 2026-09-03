@@ -5,7 +5,7 @@ import { getProfile, requireUser } from "@/features/auth/session";
 import { AuthHeading } from "@/features/auth/components/auth-ui";
 import { OnboardingChoice } from "@/features/auth/components/onboarding-choice";
 
-export const metadata: Metadata = { title: "Choose how you'll use Perch" };
+export const metadata: Metadata = { title: "Choose how you'll use Perch", robots: { index: false, follow: false } };
 
 export default async function OnboardingPage() {
   await requireUser("/onboarding");

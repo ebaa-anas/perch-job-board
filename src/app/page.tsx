@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -21,6 +22,13 @@ import { CategoryGrid } from "@/features/marketing/components/category-grid";
 import { Faq } from "@/features/marketing/components/faq";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: { absolute: "Perch — Find where you land next" },
+  description:
+    "Browse and apply to product, design and engineering roles, or post a job and review applicants. One account, one place.",
+  alternates: { canonical: "/" },
+};
 
 const SEEKER_STEPS = [
   { icon: SlidersHorizontal, text: "Search and filter by type, work mode, seniority and pay." },
@@ -46,7 +54,7 @@ export default async function HomePage() {
     <div>
       {/* Hero */}
       <section className="bg-editorial grain border-b border-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-20 text-center sm:px-6 sm:py-28">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-14 text-center sm:px-6 sm:py-28">
           <Logo size={60} className="drop-shadow-sm" />
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <span className="size-1.5 rounded-full bg-primary" />

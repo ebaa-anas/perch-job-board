@@ -1,11 +1,13 @@
+import Image from "next/image";
+
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/features/jobs/utils";
 import { logoPublicUrl } from "@/features/companies/logo-url";
 
 const SIZES = {
-  sm: "size-9 rounded-lg text-[0.7rem]",
-  md: "size-11 rounded-lg text-sm",
-  lg: "size-14 rounded-xl text-base",
+  sm: { cls: "size-9 rounded-lg text-[0.7rem]", px: 36 },
+  md: { cls: "size-11 rounded-lg text-sm", px: 44 },
+  lg: { cls: "size-14 rounded-xl text-base", px: 56 },
 } as const;
 
 export function CompanyLogo({
@@ -22,16 +24,19 @@ export function CompanyLogo({
   className?: string;
 }) {
   const src = logoPublicUrl(logoPath);
+  const { cls, px } = SIZES[size];
 
   if (src) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- user-supplied host, no loader config
-      <img
+      <Image
         src={src}
         alt={`${company} logo`}
+        width={px}
+        height={px}
+        sizes={`${px}px`}
         className={cn(
-          "shrink-0 object-contain ring-1 ring-inset ring-black/5 dark:ring-white/10",
-          SIZES[size],
+          "shrink-0 bg-card object-contain ring-1 ring-inset ring-black/5 dark:ring-white/10",
+          cls,
           className,
         )}
       />
@@ -43,7 +48,7 @@ export function CompanyLogo({
       aria-hidden
       className={cn(
         "inline-flex shrink-0 items-center justify-center font-semibold ring-1 ring-inset ring-black/5 dark:ring-white/10",
-        SIZES[size],
+        cls,
         className,
       )}
       style={{ backgroundColor: `${color}1f`, color }}

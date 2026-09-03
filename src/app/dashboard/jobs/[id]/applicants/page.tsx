@@ -7,7 +7,7 @@ import { getOwnJob } from "@/features/jobs/data";
 import { getJobApplicants } from "@/features/applications/data";
 import { ApplicantsList } from "@/features/applications/components/applicants-list";
 
-export const metadata: Metadata = { title: "Applicants" };
+export const metadata: Metadata = { title: "Applicants", robots: { index: false, follow: false } };
 
 export default async function ApplicantsPage({
   params,

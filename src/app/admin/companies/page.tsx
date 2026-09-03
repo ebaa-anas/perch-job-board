@@ -18,16 +18,18 @@ export default async function AdminCompaniesPage() {
         reports and to suspend or message it.
       </p>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b border-border text-left text-xs text-muted-foreground">
             <tr>
               <th className="p-3 font-medium">Company</th>
-              <th className="p-3 font-medium">Owner</th>
+              <th className="hidden p-3 font-medium lg:table-cell">Owner</th>
               <th className="p-3 font-medium text-right">Jobs</th>
-              <th className="p-3 font-medium text-right">Applicants</th>
+              <th className="hidden p-3 font-medium text-right sm:table-cell">
+                Applicants
+              </th>
               <th className="p-3 font-medium text-right">Reports</th>
-              <th className="p-3 font-medium">Added</th>
+              <th className="hidden p-3 font-medium md:table-cell">Added</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -46,12 +48,19 @@ export default async function AdminCompaniesPage() {
                       Suspended
                     </span>
                   )}
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground lg:hidden">
+                    {c.ownerEmail ?? "—"}
+                  </span>
                 </td>
-                <td className="p-3 text-muted-foreground">{c.ownerEmail ?? "—"}</td>
+                <td className="hidden max-w-64 truncate p-3 text-muted-foreground lg:table-cell">
+                  {c.ownerEmail ?? "—"}
+                </td>
                 <td className="p-3 text-right tabular-nums">
                   {c.published}/{c.jobs}
                 </td>
-                <td className="p-3 text-right tabular-nums">{c.applicants}</td>
+                <td className="hidden p-3 text-right tabular-nums sm:table-cell">
+                  {c.applicants}
+                </td>
                 <td className="p-3 text-right tabular-nums">
                   {c.openReports > 0 ? (
                     <span className="inline-flex items-center gap-1 font-semibold text-highlight">
@@ -62,7 +71,9 @@ export default async function AdminCompaniesPage() {
                     0
                   )}
                 </td>
-                <td className="p-3 text-muted-foreground">{formatDate(c.createdAt)}</td>
+                <td className="hidden p-3 text-muted-foreground md:table-cell">
+                  {formatDate(c.createdAt)}
+                </td>
               </tr>
             ))}
           </tbody>

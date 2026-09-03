@@ -21,7 +21,7 @@ import {
 } from "@/features/applications/data";
 import { formatRelativeDate } from "@/features/jobs/utils";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export const metadata: Metadata = { title: "Dashboard", robots: { index: false, follow: false } };
 
 const SEEKER_LINKS = [
   { href: "/jobs", label: "Browse jobs", icon: Search },

@@ -7,7 +7,7 @@ import {
   RequestResetForm,
 } from "@/features/auth/components/reset-forms";
 
-export const metadata: Metadata = { title: "Reset your password" };
+export const metadata: Metadata = { title: "Reset your password", robots: { index: false, follow: false } };
 
 export default async function ResetPage() {
   // Arriving from the reset email, /auth/callback has already exchanged the code

@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { Wordmark } from "@/components/brand/logo";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * Centered, distraction-light shell for the auth screens. It still nests inside

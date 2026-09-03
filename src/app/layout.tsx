@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 
 import "./globals.css";
@@ -25,13 +25,62 @@ const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_NAME = "Perch";
+const DESCRIPTION =
+  "A two-sided job board for product, design and engineering. Browse and apply as a seeker, or post roles and review applicants as a recruiter.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Perch — Find where you land next",
     template: "%s · Perch",
   },
-  description:
-    "A modern job board where you can browse, filter, save, and post job opportunities.",
+  description: DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    "job board",
+    "jobs",
+    "hiring",
+    "recruiting",
+    "engineering jobs",
+    "design jobs",
+    "product jobs",
+    "remote jobs",
+  ],
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: "Perch — Find where you land next",
+    description: DESCRIPTION,
+    url: SITE_URL,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: "Perch — Find where you land next",
+    description: DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
+  icons: { icon: "/icon.svg" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf8f3" },
+    { media: "(prefers-color-scheme: dark)", color: "#14130f" },
+  ],
+  colorScheme: "light dark",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
