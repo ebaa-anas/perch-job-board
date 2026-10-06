@@ -11,6 +11,7 @@ lives in Supabase Postgres with row-level security as the boundary.
 - **Supabase** — Postgres, Auth (email + Google), Storage, RLS; `@supabase/ssr`
 - **React Hook Form + Zod** for every form
 - **Resend** (REST) for the "new applicant" email — optional, degrades gracefully
+- **Claude** (REST, Anthropic Messages API) for the seeker-facing AI fit score — optional, degrades gracefully; scores are cached per (seeker, job) and capped at 50 fresh scorings per seeker per day
 - **lucide-react** icons
 
 ## Roles & routes
@@ -70,9 +71,11 @@ src/
     applications/         apply dialog, applicants list/drawer, actions, email
     admin/                overview, tables, moderation actions
     marketing/            landing-page sections
+    matching/             fit-score prompt, schema, cached action, score card
   lib/supabase/            server / client / admin / proxy factories
-  lib/                     slug, email, utils
-supabase/migrations/       0001 schema → 0006 saved-jobs RLS
+  lib/i18n/                locale cookie, provider, en/tr dictionaries
+  lib/                     slug, email, claude, utils
+supabase/migrations/       0001 schema → 0012 content language
 ```
 
 ## Local development
@@ -80,7 +83,7 @@ supabase/migrations/       0001 schema → 0006 saved-jobs RLS
 1. `npm install`
 2. Copy `.env.example` → `.env.local` and fill in the Supabase URL + keys + DB
    password (Project Settings → API). `NEXT_PUBLIC_SITE_URL` should be the
-   canonical origin. `RESEND_API_KEY` is optional.
+   canonical origin. `RESEND_API_KEY` and `ANTHROPIC_API_KEY` are both optional.
 3. `npx supabase link --project-ref <your-ref>` (one-time), then
    `npm run db:push` to apply migrations and `npm run seed` for the demo data.
 4. `npm run dev` → http://localhost:3000

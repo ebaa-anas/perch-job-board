@@ -1,0 +1,12 @@
+# Normalise line endings so a clone on Windows and one on Linux agree. Text is
+# stored LF in the repo; Git converts on checkout per the local core.autocrlf.
+* text=auto eol=lf
+
+# Binary assets Git should never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
