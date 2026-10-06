@@ -95,6 +95,7 @@ export type Database = {
       applications: {
         Row: {
           created_at: string
+          custom_answers: Json
           cv_filename: string | null
           cv_path: string | null
           id: string
@@ -105,6 +106,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_answers?: Json
           cv_filename?: string | null
           cv_path?: string | null
           id?: string
@@ -115,6 +117,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_answers?: Json
           cv_filename?: string | null
           cv_path?: string | null
           id?: string
@@ -145,6 +148,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          language: string
           logo_color: string
           logo_path: string | null
           name: string
@@ -159,6 +163,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          language?: string
           logo_color?: string
           logo_path?: string | null
           name: string
@@ -173,6 +178,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          language?: string
           logo_color?: string
           logo_path?: string | null
           name?: string
@@ -289,6 +295,98 @@ export type Database = {
           },
         ]
       }
+      job_fit_scores: {
+        Row: {
+          created_at: string
+          gaps: string[]
+          input_hash: string
+          job_id: string
+          score: number
+          seeker_id: string
+          strengths: string[]
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          gaps?: string[]
+          input_hash: string
+          job_id: string
+          score: number
+          seeker_id: string
+          strengths?: string[]
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          gaps?: string[]
+          input_hash?: string
+          job_id?: string
+          score?: number
+          seeker_id?: string
+          strengths?: string[]
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_fit_scores_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_fit_scores_seeker_id_fkey"
+            columns: ["seeker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_application_questions: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          label: string
+          options: string[]
+          position: number
+          required: boolean
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          label: string
+          options?: string[]
+          position?: number
+          required?: boolean
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          label?: string
+          options?: string[]
+          position?: number
+          required?: boolean
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_application_questions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           apply_url: string | null
@@ -298,7 +396,9 @@ export type Database = {
           description: string
           experience: string
           id: string
+          language: string
           location: string
+          no_experience_required: boolean
           perks: string[]
           requirements: string[]
           responsibilities: string[]
@@ -310,6 +410,7 @@ export type Database = {
           title: string
           type: string
           updated_at: string
+          visa_sponsorship: boolean
           work_mode: string
         }
         Insert: {
@@ -320,7 +421,9 @@ export type Database = {
           description: string
           experience: string
           id?: string
+          language?: string
           location: string
+          no_experience_required?: boolean
           perks?: string[]
           requirements?: string[]
           responsibilities?: string[]
@@ -332,6 +435,7 @@ export type Database = {
           title: string
           type: string
           updated_at?: string
+          visa_sponsorship?: boolean
           work_mode: string
         }
         Update: {
@@ -342,7 +446,9 @@ export type Database = {
           description?: string
           experience?: string
           id?: string
+          language?: string
           location?: string
+          no_experience_required?: boolean
           perks?: string[]
           requirements?: string[]
           responsibilities?: string[]
@@ -354,6 +460,7 @@ export type Database = {
           title?: string
           type?: string
           updated_at?: string
+          visa_sponsorship?: boolean
           work_mode?: string
         }
         Relationships: [

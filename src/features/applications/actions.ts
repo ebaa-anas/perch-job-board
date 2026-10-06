@@ -7,25 +7,47 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/features/auth/session";
 import { sendNewApplicantEmail } from "@/lib/email";
 import { applySchema } from "@/features/applications/schema";
+import { buildAnswersSchema } from "@/features/applications/answers";
+import { getJobQuestions } from "@/features/jobs/data";
+import type { JobApplicationQuestion } from "@/features/jobs/types";
+import type { Json } from "@/lib/supabase/database.types";
 
 type ApplyResult =
   | { ok: true; alreadyApplied?: boolean }
-  | { ok: false; error: string; needsProfile?: boolean };
+  | { ok: false; error: string; needsProfile?: boolean; fieldErrors?: Record<string, string> };
 
+interface CustomAnswerSnapshot {
+  questionId: string;
+  label: string;
+  type: JobApplicationQuestion["type"];
+  answer: string | boolean;
+}
+
+function snapshotAnswers(
+  questions: JobApplicationQuestion[],
+  answers: Record<string, unknown>,
+): CustomAnswerSnapshot[] {
+  return questions.map((q) => ({
+    questionId: q.id,
+    label: q.label,
+    type: q.type,
+    answer: q.type === "yes_no" ? Boolean(answers[q.id]) : String(answers[q.id] ?? ""),
+  }));
+}
+
+/** Every application is submitted on Perch — there is no external apply link. */
 export async function applyToJob(input: {
   jobId: string;
   note?: string;
   attachCv?: boolean;
-  /** true when the seeker clicked through to the job's external apply_url —
-   *  we record the interest so the recruiter can see who applied. */
-  external?: boolean;
+  /** Keyed by the job's custom question id (see `getJobQuestions`). */
+  answers?: Record<string, string | boolean>;
 }): Promise<ApplyResult> {
   const profile = await requireRole("seeker");
-  const external = input.external === true;
 
   const parsed = applySchema.safeParse({
-    note: external ? undefined : input.note,
-    attachCv: external ? false : input.attachCv ?? true,
+    note: input.note,
+    attachCv: input.attachCv ?? true,
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -39,9 +61,7 @@ export async function applyToJob(input: {
     .eq("profile_id", profile.id)
     .maybeSingle();
 
-  // On-site applications need at least a headline (case 2); an external
-  // click-through is just an interest record, so we don't gate it.
-  if (!external && !seeker?.headline) {
+  if (!seeker?.headline) {
     return {
       ok: false,
       needsProfile: true,
@@ -51,30 +71,33 @@ export async function applyToJob(input: {
 
   const { data: job } = await supabase
     .from("jobs")
-    .select("id, title, status, apply_url, company_id")
+    .select("id, title, status, company_id")
     .eq("id", input.jobId)
     .maybeSingle();
   if (!job || job.status !== "published") {
     return { ok: false, error: "This job isn't accepting applications." };
   }
-  if (job.apply_url && !external) {
-    return {
-      ok: false,
-      error: "This role is applied to on the company's own site.",
-    };
-  }
-  if (!job.apply_url && external) {
-    return { ok: false, error: "This role is applied to on Perch." };
+
+  const questions = await getJobQuestions(job.id);
+  const answersResult = buildAnswersSchema(questions).safeParse(input.answers ?? {});
+  if (!answersResult.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of answersResult.error.issues) {
+      const key = issue.path[0];
+      if (typeof key === "string" && !fieldErrors[key]) fieldErrors[key] = issue.message;
+    }
+    return { ok: false, error: "Please answer the required questions.", fieldErrors };
   }
 
-  const attach = !external && parsed.data.attachCv && seeker?.cv_path;
+  const attach = parsed.data.attachCv && seeker.cv_path;
   const { error } = await supabase.from("applications").insert({
     job_id: job.id,
     seeker_id: profile.id,
-    via: external ? "external" : "onsite",
-    note: external ? null : parsed.data.note || null,
-    cv_path: attach ? seeker!.cv_path : null,
-    cv_filename: attach ? seeker!.cv_filename : null,
+    via: "onsite",
+    note: parsed.data.note || null,
+    cv_path: attach ? seeker.cv_path : null,
+    cv_filename: attach ? seeker.cv_filename : null,
+    custom_answers: snapshotAnswers(questions, answersResult.data) as unknown as Json,
   });
 
   if (error) {
@@ -87,9 +110,8 @@ export async function applyToJob(input: {
     jobId: job.id,
     jobTitle: job.title,
     applicantName: profile.fullName ?? profile.email,
-    applicantHeadline: seeker?.headline ?? null,
+    applicantHeadline: seeker.headline ?? null,
     note: parsed.data.note ?? null,
-    external,
   });
 
   revalidatePath("/dashboard");
@@ -104,7 +126,6 @@ async function notifyRecruiter(input: {
   applicantName: string;
   applicantHeadline: string | null;
   note: string | null;
-  external: boolean;
 }): Promise<void> {
   try {
     const admin = createAdminClient();
@@ -125,10 +146,8 @@ async function notifyRecruiter(input: {
       jobTitle: input.jobTitle,
       applicantName: input.applicantName,
       applicantHeadline: input.applicantHeadline,
-      note: input.external
-        ? "Applied via your external application link — details are on your own site."
-        : input.note,
-      external: input.external,
+      note: input.note,
+      external: false,
     });
   } catch (error) {
     console.error("[applyToJob] recruiter notification failed", error);

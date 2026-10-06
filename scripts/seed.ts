@@ -113,9 +113,11 @@ async function main() {
       requirements: j.requirements,
       perks: j.perks,
       tags: j.tags,
-      apply_url: j.applyUrl ?? null,
       status: "published" as const,
       created_at: j.postedAt,
+      no_experience_required: j.noExperienceRequired ?? false,
+      visa_sponsorship: j.visaSponsorship ?? false,
+      language: j.language ?? "en",
     };
   });
 

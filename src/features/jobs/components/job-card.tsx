@@ -5,6 +5,9 @@ import { CompanyLogo } from "@/features/jobs/components/company-logo";
 import {
   ExperienceBadge,
   JobTypeBadge,
+  NoExperienceRequiredBadge,
+  TurkishLanguageBadge,
+  VisaSponsorshipBadge,
   WorkModeBadge,
 } from "@/features/jobs/components/job-badges";
 import { formatRelativeDate, formatSalary } from "@/features/jobs/utils";
@@ -38,6 +41,9 @@ export function JobCard({ job }: { job: Job }) {
           <JobTypeBadge type={job.type} />
           <WorkModeBadge mode={job.workMode} />
           <ExperienceBadge level={job.experience} />
+          {job.noExperienceRequired && <NoExperienceRequiredBadge />}
+          {job.visaSponsorship && <VisaSponsorshipBadge />}
+          {job.language === "tr" && <TurkishLanguageBadge />}
         </div>
 
         <div className="mt-auto space-y-1.5 text-sm text-muted-foreground">

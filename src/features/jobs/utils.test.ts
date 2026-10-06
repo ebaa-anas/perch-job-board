@@ -15,7 +15,9 @@ function toJob(seed: (typeof SEED_JOBS)[number]): Job {
     slug: seed.id,
     companyId: seed.id,
     status: "published",
-    applyUrl: seed.applyUrl,
+    noExperienceRequired: seed.noExperienceRequired ?? false,
+    visaSponsorship: seed.visaSponsorship ?? false,
+    language: seed.language ?? "en",
     company: {
       name: seed.company,
       slug: seed.company.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -49,6 +51,20 @@ describe("parseJobFilters", () => {
     expect(parseJobFilters({}).sort).toBe("relevance");
     expect(parseJobFilters({ minSalary: "-5" }).minSalary).toBeUndefined();
   });
+
+  it("parses noExperienceRequired and visaSponsorship as booleans", () => {
+    expect(parseJobFilters({ noExperienceRequired: "true" }).noExperienceRequired).toBe(true);
+    expect(parseJobFilters({ visaSponsorship: "true" }).visaSponsorship).toBe(true);
+    expect(parseJobFilters({}).noExperienceRequired).toBeUndefined();
+    expect(parseJobFilters({}).visaSponsorship).toBeUndefined();
+    expect(parseJobFilters({ noExperienceRequired: "false" }).noExperienceRequired).toBeUndefined();
+  });
+
+  it("parses language, keeping only known codes", () => {
+    expect(parseJobFilters({ language: "tr" }).language).toBe("tr");
+    expect(parseJobFilters({ language: "fr" }).language).toBeUndefined();
+    expect(parseJobFilters({}).language).toBeUndefined();
+  });
 });
 
 describe("filterAndSortJobs", () => {
@@ -67,6 +83,29 @@ describe("filterAndSortJobs", () => {
   it("ranks title matches above body matches for a query", () => {
     const res = filterAndSortJobs(JOBS, { q: "engineer", sort: "relevance" });
     expect(res[0].title.toLowerCase()).toContain("engineer");
+  });
+
+  it("filters by noExperienceRequired and visaSponsorship", () => {
+    const withFlags: Job[] = [
+      { ...JOBS[0], noExperienceRequired: true, visaSponsorship: false },
+      { ...JOBS[1], noExperienceRequired: false, visaSponsorship: true },
+    ];
+    expect(
+      filterAndSortJobs(withFlags, { noExperienceRequired: true }).map((j) => j.id),
+    ).toEqual([withFlags[0].id]);
+    expect(
+      filterAndSortJobs(withFlags, { visaSponsorship: true }).map((j) => j.id),
+    ).toEqual([withFlags[1].id]);
+  });
+
+  it("filters by language", () => {
+    const mixed: Job[] = [
+      { ...JOBS[0], language: "en" },
+      { ...JOBS[1], language: "tr" },
+    ];
+    expect(filterAndSortJobs(mixed, { language: "tr" }).map((j) => j.id)).toEqual([
+      mixed[1].id,
+    ]);
   });
 });
 
@@ -88,5 +127,17 @@ describe("filtersToSearchParams", () => {
     expect(filtersToSearchParams({ type: ["contract"] }).get("type")).toBe(
       "contract",
     );
+  });
+
+  it("round-trips the niche boolean flags", () => {
+    const qs = filtersToSearchParams({ noExperienceRequired: true, visaSponsorship: true });
+    expect(qs.get("noExperienceRequired")).toBe("true");
+    expect(qs.get("visaSponsorship")).toBe("true");
+    expect(filtersToSearchParams({}).get("noExperienceRequired")).toBeNull();
+  });
+
+  it("round-trips the language filter", () => {
+    expect(filtersToSearchParams({ language: "tr" }).get("language")).toBe("tr");
+    expect(filtersToSearchParams({}).get("language")).toBeNull();
   });
 });

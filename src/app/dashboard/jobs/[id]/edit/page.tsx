@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireRole } from "@/features/auth/session";
-import { getOwnJob } from "@/features/jobs/data";
+import { getJobQuestions, getOwnJob } from "@/features/jobs/data";
 import { JobEditorForm } from "@/features/jobs/components/job-editor-form";
 import type { JobEditorValues } from "@/features/jobs/schema";
 
@@ -14,7 +14,7 @@ export default async function EditJobPage({
 }: PageProps<"/dashboard/jobs/[id]/edit">) {
   await requireRole("recruiter");
   const { id } = await params;
-  const job = await getOwnJob(id);
+  const [job, questions] = await Promise.all([getOwnJob(id), getJobQuestions(id)]);
   if (!job) notFound();
 
   const initial: JobEditorValues = {
@@ -30,7 +30,15 @@ export default async function EditJobPage({
     requirements: job.requirements.join("\n"),
     perks: job.perks.join("\n"),
     tags: job.tags.join(", "),
-    applyUrl: job.applyUrl ?? "",
+    noExperienceRequired: job.noExperienceRequired,
+    visaSponsorship: job.visaSponsorship,
+    language: job.language,
+    questions: questions.map((q) => ({
+      label: q.label,
+      type: q.type,
+      required: q.required,
+      options: q.options,
+    })),
   };
 
   return (

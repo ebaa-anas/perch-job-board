@@ -7,6 +7,7 @@ import { requireRole } from "@/features/auth/session";
 import { pickFreeSlug, slugify } from "@/lib/slug";
 import {
   jobEditorApiSchema,
+  type ApplicationQuestionValues,
   type JobEditorInput,
 } from "@/features/jobs/schema";
 
@@ -52,7 +53,9 @@ function toRow(input: JobEditorInput) {
     requirements: input.requirements,
     perks: input.perks ?? [],
     tags: input.tags,
-    apply_url: input.applyUrl ? input.applyUrl : null,
+    no_experience_required: input.noExperienceRequired,
+    visa_sponsorship: input.visaSponsorship,
+    language: input.language,
   };
 }
 
@@ -61,6 +64,35 @@ function revalidateJob(slug: string, companySlug?: string) {
   revalidatePath("/jobs");
   revalidatePath(`/jobs/${slug}`);
   if (companySlug) revalidatePath(`/companies/${companySlug}`);
+}
+
+/** Replace a job's custom application questions wholesale — simplest correct
+ *  behavior for a recruiter re-saving the job editor's question list. */
+async function replaceJobQuestions(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  jobId: string,
+  questions: ApplicationQuestionValues[],
+): Promise<{ error: string | null }> {
+  const { error: deleteError } = await supabase
+    .from("job_application_questions")
+    .delete()
+    .eq("job_id", jobId);
+  if (deleteError) return { error: deleteError.message };
+  if (questions.length === 0) return { error: null };
+
+  const { error: insertError } = await supabase
+    .from("job_application_questions")
+    .insert(
+      questions.map((q, position) => ({
+        job_id: jobId,
+        label: q.label,
+        type: q.type,
+        required: q.required,
+        options: q.options,
+        position,
+      })),
+    );
+  return { error: insertError?.message ?? null };
 }
 
 export async function createJob(
@@ -106,6 +138,13 @@ export async function createJob(
     .single();
   if (error) return { ok: false, error: error.message };
 
+  const { error: questionsError } = await replaceJobQuestions(
+    supabase,
+    data.id,
+    parsed.data.questions,
+  );
+  if (questionsError) return { ok: false, error: questionsError };
+
   revalidateJob(data.slug, company.slug);
   return { ok: true, data };
 }
@@ -137,6 +176,13 @@ export async function updateJob(
     .select("slug")
     .single();
   if (error) return { ok: false, error: error.message };
+
+  const { error: questionsError } = await replaceJobQuestions(
+    supabase,
+    id,
+    parsed.data.questions,
+  );
+  if (questionsError) return { ok: false, error: questionsError };
 
   revalidateJob(data.slug, company.slug);
   return { ok: true, data };

@@ -168,7 +168,7 @@ describe("role guard", () => {
   it("a seeker cannot use a recruiter action", async () => {
     await actingAs(seekerEmail);
     const to = await expectRedirect(
-      upsertCompany({ name: "Nope", slug: "nope" }),
+      upsertCompany({ name: "Nope", slug: "nope", language: "en" }),
     );
     expect(to).toBe("/");
   });

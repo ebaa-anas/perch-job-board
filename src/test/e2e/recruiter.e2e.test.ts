@@ -47,7 +47,10 @@ const jobPayload = {
   requirements: ["5y experience", "Kubernetes"],
   perks: ["Remote"],
   tags: ["go", "k8s"],
-  applyUrl: "",
+  noExperienceRequired: false,
+  visaSponsorship: false,
+  language: "en" as const,
+  questions: [],
 };
 
 beforeAll(async () => {
@@ -73,13 +76,14 @@ describe("company profile", () => {
   it("validates, creates, and updates one row (not a new one each save)", async () => {
     await actingAs(recruiterEmail);
 
-    const bad = await upsertCompany({ name: "", slug: "" });
+    const bad = await upsertCompany({ name: "", slug: "", language: "en" });
     expect(bad.ok).toBe(false);
 
     const created = await upsertCompany({
       name: `Acme ${stamp}`,
       slug: `acme-${stamp}`,
       tagline: "We make things",
+      language: "en",
     });
     expect(created).toMatchObject({ ok: true });
     // slug already taken by the seeded row -> suffixed
@@ -89,6 +93,7 @@ describe("company profile", () => {
       name: `Acme ${stamp}`,
       slug: `acme-${stamp}`,
       tagline: "We make better things",
+      language: "en",
     });
     expect(updated.ok).toBe(true);
 

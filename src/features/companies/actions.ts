@@ -70,6 +70,7 @@ export async function upsertCompany(
     tagline: parsed.data.tagline || null,
     description: parsed.data.description || null,
     website: parsed.data.website || null,
+    language: parsed.data.language,
   };
 
   if (existing) {

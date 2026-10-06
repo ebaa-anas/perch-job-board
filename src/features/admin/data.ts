@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/features/auth/session";
 import type { Company } from "@/features/companies/data";
 import type { ReportReason } from "@/features/companies/schema";
+import type { ContentLanguage } from "@/features/jobs/types";
 
 /* -------------------------------------------------------------------------- */
 /*  Users                                                                      */
@@ -152,7 +153,7 @@ export const getCompanyAdminDetail = cache(
     const { data: c } = await admin
       .from("companies")
       .select(
-        "id, owner_id, name, slug, tagline, description, website, logo_path, logo_color, suspended_at, suspended_reason",
+        "id, owner_id, name, slug, tagline, description, website, logo_path, logo_color, language, suspended_at, suspended_reason",
       )
       .eq("id", id)
       .maybeSingle();
@@ -206,6 +207,7 @@ export const getCompanyAdminDetail = cache(
         website: c.website,
         logoPath: c.logo_path,
         logoColor: c.logo_color,
+        language: (c.language as ContentLanguage) ?? "en",
         suspendedAt: c.suspended_at,
         suspendedReason: c.suspended_reason,
       },

@@ -19,6 +19,13 @@ export interface MyApplication {
   };
 }
 
+export interface ApplicationAnswer {
+  questionId: string;
+  label: string;
+  type: "short_text" | "long_text" | "yes_no" | "multiple_choice";
+  answer: string | boolean;
+}
+
 export interface JobApplicant {
   id: string;
   note: string | null;
@@ -26,11 +33,14 @@ export interface JobApplicant {
   createdAt: string;
   cvFilename: string | null;
   hasCv: boolean;
+  customAnswers: ApplicationAnswer[];
   seeker: {
     id: string;
     fullName: string | null;
     headline: string | null;
     location: string | null;
+    bio: string | null;
+    skills: string[];
     portfolioUrl: string | null;
     linkedinUrl: string | null;
     githubUrl: string | null;
@@ -138,8 +148,8 @@ export const getJobApplicants = cache(
     const { data, error } = await supabase
       .from("applications")
       .select(
-        "id, note, via, created_at, cv_path, cv_filename, seeker_id, " +
-          "profiles ( full_name, seeker_profiles ( headline, location, portfolio_url, linkedin_url, github_url ) )",
+        "id, note, via, created_at, cv_path, cv_filename, seeker_id, custom_answers, " +
+          "profiles ( full_name, seeker_profiles ( headline, location, bio, skills, portfolio_url, linkedin_url, github_url ) )",
       )
       .eq("job_id", jobId)
       .order("created_at", { ascending: false });
@@ -153,11 +163,14 @@ export const getJobApplicants = cache(
       cv_path: string | null;
       cv_filename: string | null;
       seeker_id: string;
+      custom_answers: unknown;
       profiles: {
         full_name: string | null;
         seeker_profiles: {
           headline: string | null;
           location: string | null;
+          bio: string | null;
+          skills: string[] | null;
           portfolio_url: string | null;
           linkedin_url: string | null;
           github_url: string | null;
@@ -174,11 +187,16 @@ export const getJobApplicants = cache(
         createdAt: row.created_at,
         cvFilename: row.cv_filename,
         hasCv: Boolean(row.cv_path),
+        customAnswers: Array.isArray(row.custom_answers)
+          ? (row.custom_answers as ApplicationAnswer[])
+          : [],
         seeker: {
           id: row.seeker_id,
           fullName: row.profiles?.full_name ?? null,
           headline: sp?.headline ?? null,
           location: sp?.location ?? null,
+          bio: sp?.bio ?? null,
+          skills: sp?.skills ?? [],
           portfolioUrl: sp?.portfolio_url ?? null,
           linkedinUrl: sp?.linkedin_url ?? null,
           githubUrl: sp?.github_url ?? null,

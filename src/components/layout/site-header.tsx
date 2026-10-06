@@ -7,14 +7,17 @@ import { Bookmark, Menu, X } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { LocaleToggle } from "@/components/layout/locale-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Wordmark } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/locale-provider";
 import { useSavedJobs } from "@/features/saved-jobs/saved-jobs-provider";
 import type { SessionProfile } from "@/features/auth/session";
 
 export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
   const pathname = usePathname();
+  const { t } = useLocale();
   const { count, hydrated } = useSavedJobs();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [seenPath, setSeenPath] = React.useState(pathname);
@@ -30,12 +33,12 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
   const isAuthed = profile != null;
 
   const nav: { href: string; label: string }[] = [
-    { href: "/jobs", label: "Browse jobs" },
+    { href: "/jobs", label: t.nav.browseJobs },
   ];
-  if (isAuthed && role) nav.push({ href: "/dashboard", label: "Dashboard" });
-  if (isSeeker) nav.push({ href: "/saved-jobs", label: "Saved" });
-  if (role === "recruiter") nav.push({ href: "/company", label: "Company" });
-  if (role === "admin") nav.push({ href: "/admin", label: "Admin" });
+  if (isAuthed && role) nav.push({ href: "/dashboard", label: t.nav.dashboard });
+  if (isSeeker) nav.push({ href: "/saved-jobs", label: t.nav.saved });
+  if (role === "recruiter") nav.push({ href: "/company", label: t.nav.company });
+  if (role === "admin") nav.push({ href: "/admin", label: t.nav.admin });
 
   const isActive = (href: string) =>
     href === "/jobs"
@@ -80,7 +83,7 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
           {isSeeker && (
             <Link
               href="/saved-jobs"
-              aria-label="Saved jobs"
+              aria-label={t.nav.savedJobsAria}
               className={cn(
                 buttonVariants({ variant: "ghost", size: "icon" }),
                 "relative sm:hidden",
@@ -95,6 +98,7 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
             </Link>
           )}
 
+          <LocaleToggle />
           <ThemeToggle />
 
           {isAuthed ? (
@@ -109,17 +113,17 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
                 href="/login"
                 className={buttonVariants({ variant: "ghost", size: "sm" })}
               >
-                Log in
+                {t.common.logIn}
               </Link>
               <Link href="/signup" className={buttonVariants({ size: "sm" })}>
-                Sign up
+                {t.common.signUp}
               </Link>
             </div>
           )}
 
           <button
             type="button"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
             className={cn(
@@ -163,10 +167,10 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
                 href="/login"
                 className={buttonVariants({ variant: "outline", className: "w-full" })}
               >
-                Log in
+                {t.common.logIn}
               </Link>
               <Link href="/signup" className={buttonVariants({ className: "w-full" })}>
-                Sign up
+                {t.common.signUp}
               </Link>
             </div>
           )}

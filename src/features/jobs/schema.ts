@@ -1,25 +1,51 @@
 import { z } from "zod";
 import {
+  APPLICATION_QUESTION_TYPES,
+  CONTENT_LANGUAGES,
   EXPERIENCE_LEVELS,
   JOB_TYPES,
+  MAX_APPLICATION_QUESTIONS,
   WORK_MODES,
 } from "@/features/jobs/types";
 
 const SALARY_CEILING = 10_000_000;
 
 /* -------------------------------------------------------------------------- */
+/*  Per-job custom application questions                                       */
+/* -------------------------------------------------------------------------- */
+
+/** Authored by the recruiter in the job editor — one custom question. */
+export const applicationQuestionSchema = z
+  .object({
+    label: z.string().trim().min(3, "Question needs at least 3 characters").max(200),
+    type: z.enum(APPLICATION_QUESTION_TYPES, { error: "Choose a question type" }),
+    required: z.boolean(),
+    // No `.default([])` here: every caller (client form defaults, API payload
+    // mapping) always supplies `options` explicitly. A default would make
+    // zodResolver's input type diverge from `JobEditorValues` (the output
+    // type `useForm` is typed with), which TypeScript rejects.
+    options: z.array(z.string().trim().min(1)).max(6),
+  })
+  .refine((q) => q.type !== "multiple_choice" || q.options.length >= 2, {
+    path: ["options"],
+    message: "Add at least 2 options",
+  });
+
+export type ApplicationQuestionValues = z.infer<typeof applicationQuestionSchema>;
+
+export const applicationQuestionsSchema = z
+  .array(applicationQuestionSchema)
+  .max(MAX_APPLICATION_QUESTIONS, `Up to ${MAX_APPLICATION_QUESTIONS} questions`);
+
+/* -------------------------------------------------------------------------- */
 /*  Recruiter dashboard editor                                                 */
 /* -------------------------------------------------------------------------- */
 
-const optionalApplyUrl = z.union([
-  z.literal(""),
-  z.url("Enter a valid URL, including https://"),
-]);
-
 /**
  * Bound to the recruiter's job editor. No `company` field — the job is attached
- * to the recruiter's own company server-side. `applyUrl` is optional (blank =
- * on-site apply). Raw string fields for the list inputs, same as `jobFormSchema`.
+ * to the recruiter's own company server-side. Every application is submitted
+ * on Perch through `questions` (see above) — there is no external apply link.
+ * Raw string fields for the list inputs, same as `jobFormSchema`.
  */
 export const jobEditorSchema = z
   .object({
@@ -39,7 +65,14 @@ export const jobEditorSchema = z
     requirements: z.string().trim().min(3, "List at least one (one per line)"),
     perks: z.string().trim(),
     tags: z.string().trim().min(1, "Add at least one skill tag"),
-    applyUrl: optionalApplyUrl,
+    // Plain (non-default) booleans: react-hook-form always supplies both from
+    // `defaultValues`, and a `.default()` here would make zodResolver's input
+    // type diverge from `JobEditorValues` (the output type `useForm` is typed
+    // with), which TypeScript rejects.
+    noExperienceRequired: z.boolean(),
+    visaSponsorship: z.boolean(),
+    language: z.enum(CONTENT_LANGUAGES, { error: "Choose a language" }),
+    questions: applicationQuestionsSchema,
   })
   .refine((v) => v.salaryMax >= v.salaryMin, {
     path: ["salaryMax"],
@@ -63,7 +96,10 @@ export const jobEditorApiSchema = z
     requirements: z.array(z.string().trim().min(1)).min(1).max(20),
     perks: z.array(z.string().trim().min(1)).max(20).default([]),
     tags: z.array(z.string().trim().min(1)).min(1).max(12),
-    applyUrl: z.union([z.literal(""), z.url()]).optional(),
+    noExperienceRequired: z.boolean().default(false),
+    visaSponsorship: z.boolean().default(false),
+    language: z.enum(CONTENT_LANGUAGES).default("en"),
+    questions: applicationQuestionsSchema.default([]),
   })
   .refine((v) => v.salaryMax >= v.salaryMin, {
     path: ["salaryMax"],

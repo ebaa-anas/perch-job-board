@@ -12,7 +12,7 @@ import {
   uniq,
 } from "@/test/e2e-helpers";
 import { applyToJob } from "@/features/applications/actions";
-import { getApplyRecord, getJobApplicants, getMyApplications } from "@/features/applications/data";
+import { getApplyRecord } from "@/features/applications/data";
 import {
   deleteOwnReview,
   upsertReview,
@@ -35,7 +35,6 @@ let recruiterId = "";
 let seekerId = "";
 let companyId = "";
 let onsiteJobId = "";
-let externalJobId = "";
 
 beforeAll(async () => {
   await makeAdmin(adminEmail);
@@ -72,14 +71,6 @@ beforeAll(async () => {
       title: "Onsite Role",
     })
   ).id;
-  externalJobId = (
-    await seedRow("p7 external job", "jobs", {
-      ...base,
-      slug: `p7-external-${stamp}`,
-      title: "External Role",
-      apply_url: "https://example.com/apply",
-    })
-  ).id;
 
   // seeker needs a headline for on-site applies
   await service()
@@ -98,32 +89,8 @@ afterAll(async () => {
   await cleanupUsers();
 });
 
-describe("external-apply tracking", () => {
-  it("records an external click-through and shows it to both sides", async () => {
-    await actingAs(seekerEmail);
-    const r = await applyToJob({ jobId: externalJobId, external: true });
-    expect(r).toEqual({ ok: true });
-
-    const record = await getApplyRecord(externalJobId);
-    expect(record?.via).toBe("external");
-
-    const mine = await getMyApplications();
-    const row = mine.find((a) => a.job.id === externalJobId);
-    expect(row?.via).toBe("external");
-
-    await actingAs(recruiterEmail);
-    const applicants = await getJobApplicants(externalJobId);
-    expect(applicants).toHaveLength(1);
-    expect(applicants[0]?.via).toBe("external");
-  });
-
-  it("rejects external=true on an on-site job and vice versa", async () => {
-    await actingAs(seekerEmail);
-    expect((await applyToJob({ jobId: onsiteJobId, external: true })).ok).toBe(false);
-    expect((await applyToJob({ jobId: externalJobId, note: "hi" })).ok).toBe(false);
-  });
-
-  it("a normal on-site apply still works", async () => {
+describe("applying to a job", () => {
+  it("a normal on-site apply works — every application is on Perch", async () => {
     await actingAs(seekerEmail);
     const r = await applyToJob({ jobId: onsiteJobId, note: "keen", attachCv: false });
     expect(r).toEqual({ ok: true });

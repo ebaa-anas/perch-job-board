@@ -14,6 +14,9 @@ import { ApplyCta } from "@/features/applications/components/apply-cta";
 import {
   ExperienceBadge,
   JobTypeBadge,
+  NoExperienceRequiredBadge,
+  TurkishLanguageBadge,
+  VisaSponsorshipBadge,
   WorkModeBadge,
 } from "@/features/jobs/components/job-badges";
 import {
@@ -21,6 +24,7 @@ import {
   JOB_TYPE_LABELS,
   WORK_MODE_LABELS,
   type Job,
+  type JobApplicationQuestion,
 } from "@/features/jobs/types";
 import {
   formatDate,
@@ -28,6 +32,7 @@ import {
   formatSalary,
 } from "@/features/jobs/utils";
 import { SaveJobButton } from "@/features/saved-jobs/components/save-job-button";
+import { FitScoreCard } from "@/features/matching/components/fit-score-card";
 
 function BulletList({ items }: { items: string[] }) {
   return (
@@ -80,15 +85,16 @@ function OverviewRow({
 export interface ApplyContext {
   state: "guest" | "seeker" | "applied" | "owner" | "other";
   hasCv: boolean;
-  appliedVia?: "onsite" | "external";
 }
 
 export function JobDetail({
   job,
   apply,
+  questions,
 }: {
   job: Job;
   apply: ApplyContext;
+  questions: JobApplicationQuestion[];
 }) {
   return (
     <article className="space-y-6">
@@ -123,6 +129,9 @@ export function JobDetail({
               <JobTypeBadge type={job.type} />
               <WorkModeBadge mode={job.workMode} />
               <ExperienceBadge level={job.experience} />
+              {job.noExperienceRequired && <NoExperienceRequiredBadge />}
+              {job.visaSponsorship && <VisaSponsorshipBadge />}
+              {job.language === "tr" && <TurkishLanguageBadge />}
             </div>
           </div>
         </div>
@@ -131,10 +140,9 @@ export function JobDetail({
           <ApplyCta
             jobId={job.id}
             jobSlug={job.slug}
-            applyUrl={job.applyUrl}
+            questions={questions}
             state={apply.state}
             hasCv={apply.hasCv}
-            appliedVia={apply.appliedVia}
           />
           <SaveJobButton jobId={job.id} layout="full" />
           <p className="text-sm text-muted-foreground sm:ml-auto">
@@ -164,6 +172,9 @@ export function JobDetail({
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+          {(apply.state === "seeker" || apply.state === "applied") && (
+            <FitScoreCard jobId={job.id} />
+          )}
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Overview

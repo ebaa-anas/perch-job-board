@@ -2,7 +2,7 @@ import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/features/auth/session";
-import type { Job } from "@/features/jobs/types";
+import type { ContentLanguage, Job } from "@/features/jobs/types";
 
 export interface Company {
   id: string;
@@ -14,12 +14,13 @@ export interface Company {
   website: string | null;
   logoPath: string | null;
   logoColor: string;
+  language: ContentLanguage;
   suspendedAt: string | null;
   suspendedReason: string | null;
 }
 
 const COMPANY_COLUMNS =
-  "id, owner_id, name, slug, tagline, description, website, logo_path, logo_color, suspended_at, suspended_reason";
+  "id, owner_id, name, slug, tagline, description, website, logo_path, logo_color, language, suspended_at, suspended_reason";
 
 type CompanyRow = {
   id: string;
@@ -31,6 +32,7 @@ type CompanyRow = {
   website: string | null;
   logo_path: string | null;
   logo_color: string;
+  language: string | null;
   suspended_at: string | null;
   suspended_reason: string | null;
 };
@@ -46,6 +48,7 @@ function mapCompany(row: CompanyRow): Company {
     website: row.website,
     logoPath: row.logo_path,
     logoColor: row.logo_color,
+    language: (row.language as ContentLanguage) ?? "en",
     suspendedAt: row.suspended_at,
     suspendedReason: row.suspended_reason,
   };

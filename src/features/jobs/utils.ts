@@ -1,7 +1,9 @@
 import {
+  CONTENT_LANGUAGES,
   EXPERIENCE_LEVELS,
   JOB_TYPES,
   WORK_MODES,
+  type ContentLanguage,
   type ExperienceLevel,
   type Job,
   type JobFilters,
@@ -124,6 +126,17 @@ export function parseJobFilters(searchParams: RawSearchParams): JobFilters {
     ? (sortCandidate as SortOption)
     : "relevance";
 
+  const noExperienceRequired =
+    searchParams.noExperienceRequired === "true" ? true : undefined;
+  const visaSponsorship =
+    searchParams.visaSponsorship === "true" ? true : undefined;
+
+  const languageCandidate =
+    typeof searchParams.language === "string" ? searchParams.language : "";
+  const language = (CONTENT_LANGUAGES as readonly string[]).includes(languageCandidate)
+    ? (languageCandidate as ContentLanguage)
+    : undefined;
+
   return {
     q: q || undefined,
     type: type.length ? type : undefined,
@@ -131,6 +144,9 @@ export function parseJobFilters(searchParams: RawSearchParams): JobFilters {
     level: level.length ? level : undefined,
     minSalary,
     sort,
+    noExperienceRequired,
+    visaSponsorship,
+    language,
   };
 }
 
@@ -144,6 +160,9 @@ export function filtersToSearchParams(filters: JobFilters): URLSearchParams {
   if (filters.sort && filters.sort !== "relevance") {
     params.set("sort", filters.sort);
   }
+  if (filters.noExperienceRequired) params.set("noExperienceRequired", "true");
+  if (filters.visaSponsorship) params.set("visaSponsorship", "true");
+  if (filters.language) params.set("language", filters.language);
   return params;
 }
 
@@ -153,7 +172,10 @@ export function countActiveFilters(filters: JobFilters): number {
     (filters.type?.length ?? 0) +
     (filters.mode?.length ?? 0) +
     (filters.level?.length ?? 0) +
-    (filters.minSalary ? 1 : 0)
+    (filters.minSalary ? 1 : 0) +
+    (filters.noExperienceRequired ? 1 : 0) +
+    (filters.visaSponsorship ? 1 : 0) +
+    (filters.language ? 1 : 0)
   );
 }
 
@@ -194,6 +216,9 @@ export function filterAndSortJobs(jobs: Job[], filters: JobFilters): Job[] {
       return false;
     }
     if (filters.minSalary && job.salaryMax < filters.minSalary) return false;
+    if (filters.noExperienceRequired && !job.noExperienceRequired) return false;
+    if (filters.visaSponsorship && !job.visaSponsorship) return false;
+    if (filters.language && job.language !== filters.language) return false;
     return true;
   });
 

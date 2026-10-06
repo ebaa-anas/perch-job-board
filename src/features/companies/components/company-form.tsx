@@ -8,6 +8,7 @@ import { Check, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { slugify } from "@/lib/slug";
 import { Field, FormError } from "@/features/auth/components/auth-ui";
@@ -124,6 +125,18 @@ export function CompanyForm({
           aria-invalid={!!errors.website}
           {...register("website")}
         />
+      </Field>
+
+      <Field
+        label="Language"
+        htmlFor="language"
+        error={errors.language?.message}
+        hint="The language your profile and job posts are written in."
+      >
+        <Select id="language" {...register("language")}>
+          <option value="en">English</option>
+          <option value="tr">Türkçe</option>
+        </Select>
       </Field>
 
       <div className="flex items-center gap-3">

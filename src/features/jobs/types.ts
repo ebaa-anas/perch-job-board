@@ -12,6 +12,15 @@ export type WorkMode = (typeof WORK_MODES)[number];
 export const EXPERIENCE_LEVELS = ["junior", "mid", "senior", "lead"] as const;
 export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number];
 
+export const CONTENT_LANGUAGES = ["en", "tr"] as const;
+export type ContentLanguage = (typeof CONTENT_LANGUAGES)[number];
+
+/** Always the language's own name — shown regardless of the site's UI locale. */
+export const LANGUAGE_LABELS: Record<ContentLanguage, string> = {
+  en: "English",
+  tr: "Türkçe",
+};
+
 export interface JobCompany {
   name: string;
   slug: string;
@@ -37,9 +46,11 @@ export interface Job {
   requirements: string[];
   perks: string[];
   tags: string[];
-  applyUrl: string | null;
   status: "published" | "draft" | "closed";
   postedAt: string; // ISO 8601
+  noExperienceRequired: boolean;
+  visaSponsorship: boolean;
+  language: ContentLanguage;
 }
 
 export type SortOption = "recent" | "salary" | "relevance";
@@ -51,6 +62,9 @@ export interface JobFilters {
   level?: ExperienceLevel[];
   minSalary?: number;
   sort?: SortOption;
+  noExperienceRequired?: boolean;
+  visaSponsorship?: boolean;
+  language?: ContentLanguage;
 }
 
 /** Human-readable labels for the enum-ish values. */
@@ -73,3 +87,33 @@ export const EXPERIENCE_LABELS: Record<ExperienceLevel, string> = {
   senior: "Senior",
   lead: "Lead",
 };
+
+/* -------------------------------------------------------------------------- */
+/*  Per-job custom application questions                                       */
+/* -------------------------------------------------------------------------- */
+
+export const APPLICATION_QUESTION_TYPES = [
+  "short_text",
+  "long_text",
+  "yes_no",
+  "multiple_choice",
+] as const;
+export type ApplicationQuestionType = (typeof APPLICATION_QUESTION_TYPES)[number];
+
+export const QUESTION_TYPE_LABELS: Record<ApplicationQuestionType, string> = {
+  short_text: "Short answer",
+  long_text: "Long answer",
+  yes_no: "Yes / No",
+  multiple_choice: "Multiple choice",
+};
+
+export const MAX_APPLICATION_QUESTIONS = 6;
+
+export interface JobApplicationQuestion {
+  id: string;
+  label: string;
+  type: ApplicationQuestionType;
+  required: boolean;
+  /** Only meaningful for `multiple_choice`. */
+  options: string[];
+}

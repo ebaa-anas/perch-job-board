@@ -47,6 +47,7 @@ export default async function CompanyPage() {
             tagline: company?.tagline ?? "",
             description: company?.description ?? "",
             website: company?.website ?? "",
+            language: company?.language ?? "en",
           }}
           hasCompany={Boolean(company)}
         />

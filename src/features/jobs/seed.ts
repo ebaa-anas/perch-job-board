@@ -1,4 +1,5 @@
 import type {
+  ContentLanguage,
   ExperienceLevel,
   JobType,
   WorkMode,
@@ -27,8 +28,10 @@ type SeedJob = {
   requirements: string[];
   perks: string[];
   tags: string[];
-  applyUrl: string;
   postedAt: string;
+  noExperienceRequired?: boolean;
+  visaSponsorship?: boolean;
+  language?: ContentLanguage;
 };
 
 /** Days-ago helper so the seed always looks freshly posted. */
@@ -75,7 +78,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Conference and learning stipend",
     ],
     tags: ["React", "TypeScript", "Canvas", "Performance", "Design Systems"],
-    applyUrl: "https://example.com/apply/northwind-frontend",
     postedAt: daysAgo(1),
   },
   {
@@ -110,7 +112,6 @@ export const SEED_JOBS: SeedJob[] = [
       "€1,500 yearly learning budget",
     ],
     tags: ["Next.js", "Node.js", "PostgreSQL", "REST", "Testing"],
-    applyUrl: "https://example.com/apply/riverstone-fullstack",
     postedAt: daysAgo(2),
   },
   {
@@ -145,7 +146,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Cycle-to-work scheme",
     ],
     tags: ["Figma", "Product Design", "Design Systems", "Research", "Prototyping"],
-    applyUrl: "https://example.com/apply/lumen-designer",
     postedAt: daysAgo(3),
   },
   {
@@ -180,7 +180,6 @@ export const SEED_JOBS: SeedJob[] = [
       "4-day week in August",
     ],
     tags: ["Kubernetes", "Terraform", "AWS", "Go", "Observability"],
-    applyUrl: "https://example.com/apply/basecamp-devops",
     postedAt: daysAgo(4),
   },
   {
@@ -215,8 +214,8 @@ export const SEED_JOBS: SeedJob[] = [
       "Friday afternoon show-and-tell",
     ],
     tags: ["HTML", "CSS", "JavaScript", "React", "CMS"],
-    applyUrl: "https://example.com/apply/atlas-junior",
     postedAt: daysAgo(5),
+    noExperienceRequired: true,
   },
   {
     id: "backend-engineer-cadence",
@@ -250,8 +249,8 @@ export const SEED_JOBS: SeedJob[] = [
       "Pension plan with employer top-up",
     ],
     tags: ["Kotlin", "PostgreSQL", "Payments", "Distributed Systems", "APIs"],
-    applyUrl: "https://example.com/apply/cadence-backend",
     postedAt: daysAgo(6),
+    visaSponsorship: true,
   },
   {
     id: "design-engineer-parcel",
@@ -285,7 +284,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Quarterly onsites in a different city each time",
     ],
     tags: ["React", "CSS", "Framer Motion", "Storybook", "Design Systems"],
-    applyUrl: "https://example.com/apply/parcel-design-engineer",
     postedAt: daysAgo(7),
   },
   {
@@ -320,7 +318,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Strong health, dental and vision coverage",
     ],
     tags: ["Python", "SQL", "dbt", "Airflow", "Snowflake"],
-    applyUrl: "https://example.com/apply/meridian-data",
     postedAt: daysAgo(8),
   },
   {
@@ -355,7 +352,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Realistic scope set by an experienced PM",
     ],
     tags: ["React Native", "Expo", "TypeScript", "iOS", "Android"],
-    applyUrl: "https://example.com/apply/tidal-mobile",
     postedAt: daysAgo(9),
   },
   {
@@ -390,7 +386,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Yearly leadership coaching budget",
     ],
     tags: ["Leadership", "People Management", "Agile", "Hiring", "Strategy"],
-    applyUrl: "https://example.com/apply/slate-em",
     postedAt: daysAgo(11),
   },
   {
@@ -425,7 +420,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Paid certifications",
     ],
     tags: ["Playwright", "TypeScript", "CI/CD", "Testing", "Automation"],
-    applyUrl: "https://example.com/apply/harbor-qa",
     postedAt: daysAgo(13),
   },
   {
@@ -460,7 +454,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Conference tickets and speaker support",
     ],
     tags: ["DevRel", "Technical Writing", "Public Speaking", "Open Source", "Node.js"],
-    applyUrl: "https://example.com/apply/forge-devrel",
     postedAt: daysAgo(15),
   },
   {
@@ -495,7 +488,6 @@ export const SEED_JOBS: SeedJob[] = [
       "Security on-call paid as a premium",
     ],
     tags: ["AppSec", "Threat Modelling", "OWASP", "Python", "CI/CD"],
-    applyUrl: "https://example.com/apply/vault12-security",
     postedAt: daysAgo(18),
   },
   {
@@ -530,7 +522,7 @@ export const SEED_JOBS: SeedJob[] = [
       "Path to a graduate offer",
     ],
     tags: ["React", "JavaScript", "CSS", "Testing", "Internship"],
-    applyUrl: "https://example.com/apply/brightpath-intern",
     postedAt: daysAgo(21),
+    noExperienceRequired: true,
   },
 ];

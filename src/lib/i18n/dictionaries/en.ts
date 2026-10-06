@@ -1,0 +1,92 @@
+/**
+ * English strings — the canonical shape every other dictionary must match.
+ * `Dictionary` (see ../dictionary.ts) is derived from this file's type, so
+ * adding a key here without adding it to every other dictionary is a
+ * type error, not a silent gap.
+ */
+export const en = {
+  common: {
+    signIn: "Sign in",
+    logIn: "Log in",
+    signUp: "Sign up",
+    signOut: "Sign out",
+    cancel: "Cancel",
+    save: "Save",
+    loading: "Loading…",
+  },
+  nav: {
+    browseJobs: "Browse jobs",
+    dashboard: "Dashboard",
+    saved: "Saved",
+    company: "Company",
+    admin: "Admin",
+    savedJobsAria: "Saved jobs",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
+  },
+  roles: {
+    seeker: "Job seeker",
+    recruiter: "Recruiter",
+    admin: "Admin",
+  },
+  userMenu: {
+    accountMenuAria: "Account menu",
+    dashboard: "Dashboard",
+    yourProfile: "Your profile",
+    companyProfile: "Company profile",
+    admin: "Admin",
+    signOut: "Sign out",
+  },
+  footer: {
+    product: "Product",
+    browseJobs: "Browse jobs",
+    savedJobs: "Saved jobs",
+    forRecruiters: "For recruiters",
+    postJob: "Post a job",
+    companyProfile: "Company profile",
+    company: "Company",
+    about: "About",
+    contact: "Contact",
+    legal: "Legal",
+    privacy: "Privacy",
+    terms: "Terms",
+    tagline: "Where people find where they land next — and where teams find who lands with them.",
+    copyright: "Built with Next.js & TypeScript.",
+  },
+  home: {
+    openRoles: "{jobCount} open roles from {companyCount} companies",
+    heroTitle: "Find where you land next",
+    heroSubtitle:
+      "A two-sided job board for product, design and engineering. Browse and apply as a seeker, or post roles and review applicants as a recruiter — one account, one place.",
+    browseJobs: "Browse jobs",
+    postJob: "Post a job",
+    statOpenRoles: "Open roles",
+    statHiringCompanies: "Hiring companies",
+    statFreeToPost: "Free to post",
+    latestRoles: "Latest roles",
+    latestRolesSubtitle: "Freshly posted opportunities across the board.",
+    viewAllJobs: "View all jobs",
+    browseByArea: "Browse by area",
+    browseByAreaSubtitle: "Jump straight to what you do.",
+    howItWorks: "How Perch works",
+    forJobSeekers: "For job seekers",
+    forRecruiters: "For recruiters",
+    createSeekerAccount: "Create a seeker account",
+    createRecruiterAccount: "Create a recruiter account",
+    seekerSteps: [
+      "Search and filter by type, work mode, seniority and pay.",
+      "Save roles as you go — they sync to your account when you sign in.",
+      "Apply on-site with a note and your CV. Track every application in one place.",
+    ],
+    recruiterSteps: [
+      "Set up your company page — logo, tagline, the pitch.",
+      "Post a role as a draft or publish it live to the board instantly.",
+      "Review applicants with their profile, note and CV, and get an email on every new one.",
+    ],
+    teamsHiring: "Teams hiring on Perch",
+    hiringCtaTitle: "Hiring? Post your first role free",
+    hiringCtaSubtitle: "Create a company page, publish a job, and start reviewing applicants today. No card, no catch.",
+    getStarted: "Get started",
+    questions: "Questions",
+  },
+};

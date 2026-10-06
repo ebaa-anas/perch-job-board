@@ -2,9 +2,16 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import {
+  useFieldArray,
+  useForm,
+  useWatch,
+  type Control,
+  type UseFormRegister,
+  type UseFormSetValue,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +19,15 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
+  CONTENT_LANGUAGES,
   EXPERIENCE_LABELS,
   EXPERIENCE_LEVELS,
   JOB_TYPES,
   JOB_TYPE_LABELS,
+  LANGUAGE_LABELS,
+  MAX_APPLICATION_QUESTIONS,
+  QUESTION_TYPE_LABELS,
+  APPLICATION_QUESTION_TYPES,
   WORK_MODES,
   WORK_MODE_LABELS,
 } from "@/features/jobs/types";
@@ -23,6 +35,7 @@ import {
   jobEditorSchema,
   linesToList,
   tokensToList,
+  type ApplicationQuestionValues,
   type JobEditorValues,
 } from "@/features/jobs/schema";
 import { createJob, updateJob } from "@/features/jobs/actions";
@@ -41,7 +54,17 @@ const BLANK: JobEditorValues = {
   requirements: "",
   perks: "",
   tags: "",
-  applyUrl: "",
+  noExperienceRequired: false,
+  visaSponsorship: false,
+  language: "en",
+  questions: [],
+};
+
+const BLANK_QUESTION: ApplicationQuestionValues = {
+  label: "",
+  type: "short_text",
+  required: true,
+  options: [],
 };
 
 function Section({
@@ -81,7 +104,9 @@ export function JobEditorForm({
 
   const {
     register,
+    control,
     handleSubmit,
+    setValue,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<JobEditorValues>({
@@ -89,6 +114,8 @@ export function JobEditorForm({
     defaultValues: initial ?? BLANK,
     mode: "onBlur",
   });
+
+  const questionArray = useFieldArray({ control, name: "questions" });
 
   const submit = (which: "draft" | "publish" | "save") =>
     handleSubmit(async (values) => {
@@ -107,7 +134,15 @@ export function JobEditorForm({
         requirements: linesToList(values.requirements),
         perks: values.perks ? linesToList(values.perks) : [],
         tags: tokensToList(values.tags),
-        applyUrl: values.applyUrl ?? "",
+        noExperienceRequired: values.noExperienceRequired,
+        visaSponsorship: values.visaSponsorship,
+        language: values.language,
+        questions: values.questions.map((q) => ({
+          label: q.label,
+          type: q.type,
+          required: q.required,
+          options: q.type === "multiple_choice" ? q.options : [],
+        })),
       };
 
       const result =
@@ -148,6 +183,20 @@ export function JobEditorForm({
             aria-invalid={!!errors.location}
             {...register("location")}
           />
+        </Field>
+        <Field
+          label="Language"
+          htmlFor="language"
+          error={errors.language?.message}
+          hint="Write the whole listing in this language."
+        >
+          <Select id="language" {...register("language")}>
+            {CONTENT_LANGUAGES.map((l) => (
+              <option key={l} value={l}>
+                {LANGUAGE_LABELS[l]}
+              </option>
+            ))}
+          </Select>
         </Field>
       </Section>
 
@@ -225,18 +274,69 @@ export function JobEditorForm({
         </Field>
       </Section>
 
-      <Section title="Apply & skills" description="Where candidates apply, and the skills that matter.">
-        <Field
-          label="External application URL"
-          htmlFor="applyUrl"
-          error={errors.applyUrl?.message}
-          hint="Optional. Leave blank to collect applications on Perch."
-        >
-          <Input id="applyUrl" type="url" placeholder="https://example.com/apply/…" aria-invalid={!!errors.applyUrl} {...register("applyUrl")} />
-        </Field>
+      <Section title="Apply & skills" description="Applications are always submitted on Perch. Add the skills that matter.">
         <Field label="Skill tags" htmlFor="tags" error={errors.tags?.message} hint="Comma separated, e.g. React, TypeScript, GraphQL.">
           <Input id="tags" placeholder="React, TypeScript, Design Systems" aria-invalid={!!errors.tags} {...register("tags")} />
         </Field>
+        <div className="space-y-2.5">
+          <label className="flex items-start gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 rounded border-input accent-primary"
+              {...register("noExperienceRequired")}
+            />
+            <span>
+              No experience required
+              <span className="block text-xs text-muted-foreground">
+                Great fit for new grads, career switchers, and internships.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 rounded border-input accent-primary"
+              {...register("visaSponsorship")}
+            />
+            <span>
+              Visa sponsorship available
+              <span className="block text-xs text-muted-foreground">
+                Shown as a filter so candidates who need sponsorship can find this role.
+              </span>
+            </span>
+          </label>
+        </div>
+      </Section>
+
+      <Section
+        title="Application questions"
+        description="Ask up to 6 questions specific to this role. Candidates answer them when they apply."
+      >
+        <div className="space-y-4">
+          {questionArray.fields.map((field, index) => (
+            <QuestionRow
+              key={field.id}
+              index={index}
+              control={control}
+              register={register}
+              setValue={setValue}
+              defaultOptions={field.options}
+              onRemove={() => questionArray.remove(index)}
+              labelError={errors.questions?.[index]?.label?.message}
+              optionsError={errors.questions?.[index]?.options?.message}
+            />
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={questionArray.fields.length >= MAX_APPLICATION_QUESTIONS}
+            onClick={() => questionArray.append(BLANK_QUESTION)}
+          >
+            <Plus className="size-4" />
+            Add question
+          </Button>
+        </div>
       </Section>
 
       <div className="flex flex-wrap items-center justify-end gap-3">
@@ -280,5 +380,90 @@ export function JobEditorForm({
         Drafts stay private until you publish them.
       </p>
     </form>
+  );
+}
+
+function QuestionRow({
+  index,
+  control,
+  register,
+  setValue,
+  defaultOptions,
+  onRemove,
+  labelError,
+  optionsError,
+}: {
+  index: number;
+  control: Control<JobEditorValues>;
+  register: UseFormRegister<JobEditorValues>;
+  setValue: UseFormSetValue<JobEditorValues>;
+  defaultOptions: string[];
+  onRemove: () => void;
+  labelError?: string;
+  optionsError?: string;
+}) {
+  const [optionsText, setOptionsText] = React.useState(defaultOptions.join("\n"));
+  const type = useWatch({ control, name: `questions.${index}.type` });
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 space-y-1.5">
+          <Input
+            placeholder="e.g. What's your notice period?"
+            aria-invalid={!!labelError}
+            {...register(`questions.${index}.label`)}
+          />
+          {labelError && <p className="text-xs text-red-600 dark:text-red-400">{labelError}</p>}
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Remove question"
+          onClick={onRemove}
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Select className="w-auto" {...register(`questions.${index}.type`)}>
+          {APPLICATION_QUESTION_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {QUESTION_TYPE_LABELS[t]}
+            </option>
+          ))}
+        </Select>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4 rounded border-input accent-primary"
+            {...register(`questions.${index}.required`)}
+          />
+          Required
+        </label>
+      </div>
+
+      {type === "multiple_choice" && (
+        <div className="space-y-1.5">
+          <Textarea
+            rows={3}
+            placeholder="One option per line"
+            aria-invalid={!!optionsError}
+            value={optionsText}
+            onChange={(e) => {
+              setOptionsText(e.target.value);
+              setValue(`questions.${index}.options`, linesToList(e.target.value), {
+                shouldValidate: true,
+              });
+            }}
+          />
+          {optionsError && (
+            <p className="text-xs text-red-600 dark:text-red-400">{optionsError}</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { CONTENT_LANGUAGES } from "@/features/jobs/types";
+
 /** Optional URL field that also accepts an empty string (unset). */
 const optionalUrl = z.union([z.literal(""), z.url("Enter a valid URL")]);
 
@@ -18,6 +20,11 @@ export const companySchema = z.object({
     .max(4000, "Keep the description under 4000 characters")
     .optional(),
   website: optionalUrl.optional(),
+  // Plain (non-default): this schema is bound to react-hook-form's zodResolver
+  // in CompanyForm, and a `.default()` would make the resolver's input type
+  // diverge from `CompanyValues` (the output type `useForm` is typed with),
+  // which TypeScript rejects. The page always supplies an initial value.
+  language: z.enum(CONTENT_LANGUAGES, { error: "Choose a language" }),
 });
 
 export type CompanyValues = z.infer<typeof companySchema>;

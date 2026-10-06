@@ -8,6 +8,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SavedJobsProvider } from "@/features/saved-jobs/saved-jobs-provider";
 import { getProfile } from "@/features/auth/session";
 import { listSavedJobIds } from "@/features/saved-jobs/actions";
+import { LocaleProvider } from "@/lib/i18n/locale-provider";
+import { getLocale } from "@/lib/i18n/locale";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -84,14 +86,14 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const profile = await getProfile();
+  const [profile, locale] = await Promise.all([getProfile(), getLocale()]);
   const isSeeker = profile?.role === "seeker";
   const canSave = !profile || profile.role === "seeker";
   const savedIds = isSeeker ? await listSavedJobIds() : [];
 
   return (
     <html
-      lang="en"
+      lang={locale}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
@@ -99,17 +101,19 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col overflow-x-hidden bg-background text-foreground">
-        <ThemeProvider>
-          <SavedJobsProvider
-            authedSeeker={isSeeker}
-            serverIds={savedIds}
-            canSave={canSave}
-          >
-            <SiteHeader profile={profile} />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-          </SavedJobsProvider>
-        </ThemeProvider>
+        <LocaleProvider initialLocale={locale}>
+          <ThemeProvider>
+            <SavedJobsProvider
+              authedSeeker={isSeeker}
+              serverIds={savedIds}
+              canSave={canSave}
+            >
+              <SiteHeader profile={profile} />
+              <main className="flex-1">{children}</main>
+              <SiteFooter />
+            </SavedJobsProvider>
+          </ThemeProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -140,12 +140,57 @@ function ApplicantDrawer({
             </p>
           )}
 
+          {applicant.seeker.bio && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                About
+              </h3>
+              <p className="mt-1 whitespace-pre-line">{applicant.seeker.bio}</p>
+            </div>
+          )}
+
+          {applicant.seeker.skills.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Skills
+              </h3>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {applicant.seeker.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {applicant.note && (
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Note
               </h3>
               <p className="mt-1 whitespace-pre-line">{applicant.note}</p>
+            </div>
+          )}
+
+          {applicant.customAnswers.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Application questions
+              </h3>
+              <dl className="mt-1.5 space-y-3">
+                {applicant.customAnswers.map((a) => (
+                  <div key={a.questionId}>
+                    <dt className="font-medium">{a.label}</dt>
+                    <dd className="mt-0.5 whitespace-pre-line text-muted-foreground">
+                      {a.type === "yes_no" ? (a.answer ? "Yes" : "No") : String(a.answer) || "—"}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           )}
 

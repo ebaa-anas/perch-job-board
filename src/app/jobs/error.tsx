@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 
 export default function JobsError({
   error,
-  retry,
+  reset,
 }: {
   error: Error & { digest?: string };
-  retry: () => void;
+  reset: () => void;
 }) {
   React.useEffect(() => {
     console.error(error);
@@ -26,7 +26,7 @@ export default function JobsError({
         Something went wrong while fetching the job list. This is usually
         temporary.
       </p>
-      <Button onClick={retry}>Try again</Button>
+      <Button onClick={reset}>Try again</Button>
     </div>
   );
 }

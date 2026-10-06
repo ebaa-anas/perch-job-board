@@ -33,14 +33,6 @@ export default async function ApplicantsPage({
         {applicants.length === 1 ? "person" : "people"}
       </p>
 
-      {job.applyUrl && (
-        <p className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-          This role links out to your own application form. The people below
-          clicked through from Perch — their full application (note, CV) lives on
-          your site, not here.
-        </p>
-      )}
-
       <div className="mt-8">
         <ApplicantsList applicants={applicants} />
       </div>

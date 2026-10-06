@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/features/auth/session";
-import type { Job } from "@/features/jobs/types";
+import type { Job, JobApplicationQuestion } from "@/features/jobs/types";
 
 /**
  * Supabase-backed data layer. Reads go through the request-scoped server client
@@ -16,7 +16,7 @@ import type { Job } from "@/features/jobs/types";
 const JOB_SELECT =
   "id, slug, company_id, title, location, type, work_mode, experience, " +
   "salary_min, salary_max, currency, description, responsibilities, requirements, " +
-  "perks, tags, apply_url, status, created_at, " +
+  "perks, tags, status, created_at, no_experience_required, visa_sponsorship, language, " +
   "companies!inner ( name, slug, logo_color, logo_path )";
 
 type Row = Record<string, unknown> & {
@@ -47,9 +47,11 @@ function mapJobRow(row: Row): Job {
     requirements: (row.requirements as string[]) ?? [],
     perks: (row.perks as string[]) ?? [],
     tags: (row.tags as string[]) ?? [],
-    applyUrl: (row.apply_url as string | null) ?? null,
     status: row.status as Job["status"],
     postedAt: row.created_at as string,
+    noExperienceRequired: Boolean(row.no_experience_required),
+    visaSponsorship: Boolean(row.visa_sponsorship),
+    language: (row.language as Job["language"]) ?? "en",
   };
 }
 
@@ -73,6 +75,19 @@ export const getJobBySlug = cache(async (slug: string): Promise<Job | null> => {
     .eq("status", "published")
     .maybeSingle();
   if (error) throw new Error(`getJobBySlug: ${error.message}`);
+  return data ? mapJobRow(data as unknown as Row) : null;
+});
+
+/** A published job by id — used where the caller already has the id, not the slug. */
+export const getPublishedJobById = cache(async (id: string): Promise<Job | null> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(JOB_SELECT)
+    .eq("id", id)
+    .eq("status", "published")
+    .maybeSingle();
+  if (error) throw new Error(`getPublishedJobById: ${error.message}`);
   return data ? mapJobRow(data as unknown as Row) : null;
 });
 
@@ -117,3 +132,27 @@ export const getOwnJob = cache(async (id: string): Promise<Job | null> => {
   if (error) throw new Error(`getOwnJob: ${error.message}`);
   return data ? mapJobRow(data as unknown as Row) : null;
 });
+
+/**
+ * A job's custom application questions, ordered for display. RLS mirrors the
+ * job's own visibility (published, or the owner/admin), so a seeker filling
+ * out the apply form and the owning recruiter editing the job both just work.
+ */
+export const getJobQuestions = cache(
+  async (jobId: string): Promise<JobApplicationQuestion[]> => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("job_application_questions")
+      .select("id, label, type, required, options")
+      .eq("job_id", jobId)
+      .order("position", { ascending: true });
+    if (error) throw new Error(`getJobQuestions: ${error.message}`);
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      label: row.label,
+      type: row.type as JobApplicationQuestion["type"],
+      required: row.required,
+      options: row.options ?? [],
+    }));
+  },
+);

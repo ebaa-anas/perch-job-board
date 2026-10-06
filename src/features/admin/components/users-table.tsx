@@ -7,17 +7,29 @@ import { Loader2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { formatDate } from "@/features/jobs/utils";
 import { adminDeleteUser } from "@/features/admin/actions";
 import type { AdminUserRow } from "@/features/admin/data";
 
+type RoleFilter = "all" | "seeker" | "recruiter" | "admin";
+
+const ROLE_FILTERS: { value: RoleFilter; label: string }[] = [
+  { value: "all", label: "All roles" },
+  { value: "seeker", label: "Job seekers" },
+  { value: "recruiter", label: "Recruiters" },
+  { value: "admin", label: "Admins" },
+];
+
 export function UsersTable({ users }: { users: AdminUserRow[] }) {
   const router = useRouter();
   const [q, setQ] = React.useState("");
+  const [role, setRole] = React.useState<RoleFilter>("all");
   const [busy, setBusy] = React.useState<string | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
 
   const filtered = users.filter((u) => {
+    if (role !== "all" && u.role !== role) return false;
     const t = q.trim().toLowerCase();
     if (!t) return true;
     return (
@@ -44,12 +56,32 @@ export function UsersTable({ users }: { users: AdminUserRow[] }) {
 
   return (
     <div>
-      <Input
-        placeholder="Filter by email, name or role…"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Filter by email or name…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="max-w-sm"
+        />
+        <div className="flex flex-wrap gap-1.5">
+          {ROLE_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setRole(f.value)}
+              aria-pressed={role === f.value}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                role === f.value
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:border-foreground/20 hover:text-foreground",
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {err && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
       <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
         <table className="w-full text-sm">

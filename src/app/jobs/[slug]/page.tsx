@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { getJobBySlug } from "@/features/jobs/data";
+import { getJobBySlug, getJobQuestions } from "@/features/jobs/data";
 import { JobDetail, type ApplyContext } from "@/features/jobs/components/job-detail";
 import { getProfile } from "@/features/auth/session";
 import { getOwnCompany } from "@/features/companies/data";
 import { getOwnSeekerProfile } from "@/features/profiles/data";
-import { getApplyRecord } from "@/features/applications/data";
+import { hasApplied } from "@/features/applications/data";
 
 export async function generateMetadata({
   params,
@@ -38,14 +38,13 @@ async function resolveApplyContext(
   if (profile.role === "admin") return { state: "other", hasCv: false };
 
   // seeker
-  const [record, seeker] = await Promise.all([
-    getApplyRecord(jobId),
+  const [applied, seeker] = await Promise.all([
+    hasApplied(jobId),
     getOwnSeekerProfile(),
   ]);
   return {
-    state: record ? "applied" : "seeker",
+    state: applied ? "applied" : "seeker",
     hasCv: Boolean(seeker?.cvPath),
-    appliedVia: record?.via,
   };
 }
 
@@ -56,11 +55,14 @@ export default async function JobDetailPage({
   const job = await getJobBySlug(slug);
   if (!job) notFound();
 
-  const apply = await resolveApplyContext(job.id, job.companyId);
+  const [apply, questions] = await Promise.all([
+    resolveApplyContext(job.id, job.companyId),
+    getJobQuestions(job.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <JobDetail job={job} apply={apply} />
+      <JobDetail job={job} apply={apply} questions={questions} />
     </div>
   );
 }

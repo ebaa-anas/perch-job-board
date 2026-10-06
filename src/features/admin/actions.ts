@@ -344,7 +344,6 @@ export async function adminReseedDemo(): Promise<Result> {
       requirements: j.requirements,
       perks: j.perks,
       tags: j.tags,
-      apply_url: j.applyUrl || null,
       status: "published" as const,
     };
   });

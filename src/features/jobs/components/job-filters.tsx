@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
+  CONTENT_LANGUAGES,
   EXPERIENCE_LABELS,
   EXPERIENCE_LEVELS,
   JOB_TYPES,
   JOB_TYPE_LABELS,
+  LANGUAGE_LABELS,
   WORK_MODES,
   WORK_MODE_LABELS,
   type ExperienceLevel,
@@ -215,6 +217,48 @@ export function JobFilters({
               {EXPERIENCE_LABELS[level]}
             </Chip>
           ))}
+        </ChipGroup>
+
+        <ChipGroup label="Language">
+          {CONTENT_LANGUAGES.map((lang) => (
+            <Chip
+              key={lang}
+              active={filters.language === lang}
+              onClick={() =>
+                commit({
+                  ...filters,
+                  language: filters.language === lang ? undefined : lang,
+                })
+              }
+            >
+              {LANGUAGE_LABELS[lang]}
+            </Chip>
+          ))}
+        </ChipGroup>
+
+        <ChipGroup label="Candidate fit">
+          <Chip
+            active={filters.noExperienceRequired ?? false}
+            onClick={() =>
+              commit({
+                ...filters,
+                noExperienceRequired: filters.noExperienceRequired ? undefined : true,
+              })
+            }
+          >
+            No experience required
+          </Chip>
+          <Chip
+            active={filters.visaSponsorship ?? false}
+            onClick={() =>
+              commit({
+                ...filters,
+                visaSponsorship: filters.visaSponsorship ? undefined : true,
+              })
+            }
+          >
+            Visa sponsorship
+          </Chip>
         </ChipGroup>
 
         <div className="grid gap-3 sm:grid-cols-2">

@@ -32,3 +32,16 @@ export function WorkModeBadge({ mode }: { mode: WorkMode }) {
 export function ExperienceBadge({ level }: { level: ExperienceLevel }) {
   return <Badge tone="outline">{EXPERIENCE_LABELS[level]}</Badge>;
 }
+
+export function NoExperienceRequiredBadge() {
+  return <Badge tone="success">No experience required</Badge>;
+}
+
+export function VisaSponsorshipBadge() {
+  return <Badge tone="info">Visa sponsorship</Badge>;
+}
+
+/** English postings are the unmarked default; only Turkish gets a badge. */
+export function TurkishLanguageBadge() {
+  return <Badge tone="neutral">Türkçe</Badge>;
+}
