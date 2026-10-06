@@ -1,0 +1,61 @@
+name: Regenerate lockfile (one-off)
+
+# Temporary, manual-only. npm will not resolve the dependencies of a
+# `cpu: ["wasm32"]` package on Windows, so a lockfile generated there is missing
+# entries that `npm ci` on Linux insists on — concretely @emnapi/core and
+# @emnapi/wasi-threads, required by @tailwindcss/oxide-wasm32-wasi. No npm flag
+# works around it; the tree has to be resolved on Linux.
+#
+# Run it once from the Actions tab against this branch, let it commit the
+# regenerated lockfile, confirm CI goes green, then delete this file.
+#
+# It only ever rewrites package-lock.json. package.json is restored before the
+# commit, so a stray npm rewrite cannot smuggle in a dependency change.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    name: Resolve the dependency tree on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # A full install, not `--package-lock-only`: that flag resolves only the
+      # current platform and drops every other platform's optional variants.
+      - name: Resolve dependencies
+        run: |
+          rm -f package-lock.json
+          npm install
+
+      - name: Refuse any change to package.json
+        run: git checkout -- package.json
+
+      - name: Verify the lockfile installs cleanly
+        run: npm ci
+
+      - name: Commit the regenerated lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "Lockfile already complete — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: regenerate package-lock.json on linux
+
+          npm does not resolve the dependencies of cpu: [\"wasm32\"] packages on
+          Windows, so the committed lockfile was missing @emnapi entries that
+          npm ci on Linux requires. Resolved on ubuntu instead."
+          git push

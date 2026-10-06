@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# One run per ref. Pushing again to a branch cancels the previous run rather
+# than leaving two sets of results racing on the same PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, lint, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `next typegen` writes the generated PageProps / LayoutProps globals that
+      # the App Router pages are typed against. Without it tsc fails on types it
+      # cannot see, because they are produced by a build rather than committed.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # Unit tests only. The integration project talks to a real Supabase
+      # project and runs in the separate job below; e2e is never run in CI
+      # because it writes to a real database.
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Build
+        run: npm run build
+        env:
+          # Placeholders. The build only needs these to be present and
+          # well-formed — nothing is fetched from Supabase at build time, since
+          # every route that reads data is server-rendered on demand.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          NEXT_PUBLIC_SITE_URL: https://example.com
+
+  # Secrets are not readable from a job-level `if:`, so a tiny job checks
+  # whether they are set and publishes a yes/no. It tests for emptiness only and
+  # never prints a value.
+  integration-secrets:
+    name: Check for integration secrets
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - id: check
+        env:
+          URL: ${{ secrets.SUPABASE_TEST_URL }}
+          ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+          SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -n "$URL" ] && [ -n "$ANON_KEY" ] && [ -n "$SERVICE_ROLE_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "All three integration secrets are set."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Integration secrets are not set — skipping integration tests."
+          fi
+
+  # These tests read and write real rows, so the secrets below must point at a
+  # dedicated STAGING Supabase project — never production. The service-role key
+  # bypasses RLS entirely, so anything it is pointed at can be rewritten.
+  integration:
+    name: Integration tests
+    needs: integration-secrets
+    if: needs.integration-secrets.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Integration tests
+        run: npm run test:integration
+        env:
+          # The repo secrets are named for what they are; these are the names
+          # src/test/setup-integration.ts actually reads.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
