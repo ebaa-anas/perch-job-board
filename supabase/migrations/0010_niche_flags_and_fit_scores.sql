@@ -30,15 +30,8 @@ create table if not exists public.job_fit_scores (
   strengths  text[] not null default '{}',
   gaps       text[] not null default '{}',
   created_at timestamptz not null default now(),
-  -- Bumped on every (re)scoring, unlike created_at, which stays at the first.
-  -- `getFitScore` counts recent rows by this column to cap how many paid model
-  -- calls one seeker can trigger per day.
-  updated_at timestamptz not null default now(),
   primary key (seeker_id, job_id)
 );
-
-create index if not exists job_fit_scores_seeker_updated_idx
-  on public.job_fit_scores (seeker_id, updated_at desc);
 
 alter table public.job_fit_scores enable row level security;
 
