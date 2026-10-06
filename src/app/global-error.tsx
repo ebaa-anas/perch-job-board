@@ -8,10 +8,10 @@ import * as React from "react";
  */
 export default function GlobalError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   React.useEffect(() => {
     console.error(error);
@@ -38,7 +38,7 @@ export default function GlobalError({
           </p>
           <button
             type="button"
-            onClick={reset}
+            onClick={() => retry()}
             style={{
               height: 40,
               padding: "0 20px",
