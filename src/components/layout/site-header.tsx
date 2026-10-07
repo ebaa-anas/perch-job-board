@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, Menu, X } from "lucide-react";
+import { Bell, Bookmark, Menu, X } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -15,7 +15,13 @@ import { useLocale } from "@/lib/i18n/locale-provider";
 import { useSavedJobs } from "@/features/saved-jobs/saved-jobs-provider";
 import type { SessionProfile } from "@/features/auth/session";
 
-export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
+export function SiteHeader({
+  profile,
+  unreadNotifications = 0,
+}: {
+  profile: SessionProfile | null;
+  unreadNotifications?: number;
+}) {
   const pathname = usePathname();
   const { t } = useLocale();
   const { count, hydrated } = useSavedJobs();
@@ -37,6 +43,7 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
   ];
   if (isAuthed && role) nav.push({ href: "/dashboard", label: t.nav.dashboard });
   if (isSeeker) nav.push({ href: "/saved-jobs", label: t.nav.saved });
+  if (isSeeker) nav.push({ href: "/alerts", label: t.nav.alerts });
   if (role === "recruiter") nav.push({ href: "/company", label: t.nav.company });
   if (role === "admin") nav.push({ href: "/admin", label: t.nav.admin });
 
@@ -93,6 +100,24 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
               {hydrated && count > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground">
                   {count}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {isAuthed && (
+            <Link
+              href="/notifications"
+              aria-label={t.nav.notificationsAria}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "icon" }),
+                "relative",
+              )}
+            >
+              <Bell className="size-[1.15rem]" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground">
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
                 </span>
               )}
             </Link>

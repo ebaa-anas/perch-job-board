@@ -18,6 +18,8 @@ export const tr: typeof en = {
     company: "Şirket",
     admin: "Yönetici",
     savedJobsAria: "Kaydedilen ilanlar",
+    alerts: "Uyarılar",
+    notificationsAria: "Bildirimler",
     openMenu: "Menüyü aç",
     closeMenu: "Menüyü kapat",
   },

@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SavedJobsProvider } from "@/features/saved-jobs/saved-jobs-provider";
 import { getProfile } from "@/features/auth/session";
+import { getUnreadNotificationCount } from "@/features/notifications/data";
 import { listSavedJobIds } from "@/features/saved-jobs/actions";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
 import { getLocale } from "@/lib/i18n/locale";
@@ -89,7 +90,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [profile, locale] = await Promise.all([getProfile(), getLocale()]);
   const isSeeker = profile?.role === "seeker";
   const canSave = !profile || profile.role === "seeker";
-  const savedIds = isSeeker ? await listSavedJobIds() : [];
+  const [savedIds, unreadNotifications] = await Promise.all([
+    isSeeker ? listSavedJobIds() : Promise.resolve([]),
+    profile ? getUnreadNotificationCount() : Promise.resolve(0),
+  ]);
 
   return (
     <html
@@ -108,7 +112,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               serverIds={savedIds}
               canSave={canSave}
             >
-              <SiteHeader profile={profile} />
+              <SiteHeader
+                profile={profile}
+                unreadNotifications={unreadNotifications}
+              />
               <main className="flex-1">{children}</main>
               <SiteFooter />
             </SavedJobsProvider>

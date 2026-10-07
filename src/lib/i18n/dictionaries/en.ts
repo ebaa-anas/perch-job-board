@@ -21,6 +21,8 @@ export const en = {
     company: "Company",
     admin: "Admin",
     savedJobsAria: "Saved jobs",
+    alerts: "Alerts",
+    notificationsAria: "Notifications",
     openMenu: "Open menu",
     closeMenu: "Close menu",
   },
