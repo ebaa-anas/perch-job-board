@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { deleteJob, setJobStatus } from "@/features/jobs/actions";
+import { duplicateJob } from "@/features/jobs/import-actions";
 import type { Job } from "@/features/jobs/types";
 
 export function JobStatusActions({
@@ -56,6 +57,24 @@ export function JobStatusActions({
       >
         Edit
       </Link>
+
+      {/* Reposting a closed role is the common case; the copy lands as a
+          draft so dates and salary can be revised before it goes live. */}
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={pending !== null}
+        onClick={() =>
+          run("duplicate", async () => {
+            const result = await duplicateJob(jobId);
+            if (result.ok) router.push(`/dashboard/jobs/${result.id}/edit`);
+            return result;
+          })
+        }
+      >
+        {pending === "duplicate" && <Loader2 className="size-4 animate-spin" />}
+        Duplicate
+      </Button>
 
       {status !== "published" && (
         <Button

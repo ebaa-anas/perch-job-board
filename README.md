@@ -55,6 +55,7 @@ RECRUITER (role='recruiter')
   /dashboard                    own jobs grouped by status + applicant counts
   /dashboard/analytics          per-job funnel: views, apply rate, reply time
   /dashboard/jobs/new           post (draft | publish)
+  /dashboard/jobs/import        bulk CSV import (preview, then draft/publish)
   /dashboard/jobs/[id]/edit
   /dashboard/jobs/[id]/applicants   list + stage filter + bulk moves +
                                     detail drawer (pipeline, rating,

@@ -10,6 +10,7 @@ import {
   FileText,
   Plus,
   Search,
+  Upload,
   Users,
 } from "lucide-react";
 
@@ -72,6 +73,13 @@ export default async function DashboardPage() {
               >
                 <Users className="size-4" />
                 Team
+              </Link>
+              <Link
+                href="/dashboard/jobs/import"
+                className={buttonVariants({ variant: "outline", size: "lg" })}
+              >
+                <Upload className="size-4" />
+                Import
               </Link>
               <Link
                 href="/dashboard/jobs/new"
