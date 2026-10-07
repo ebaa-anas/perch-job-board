@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { SeekerStatus } from "@/features/applications/pipeline";
+
 /**
  * Minimal transactional email via the Resend REST API — no SDK dependency.
  * Degrades gracefully: with no `RESEND_API_KEY` it logs and returns, so local
@@ -105,6 +107,197 @@ export async function sendAdminMessageEmail(input: {
         ${paragraphs}
         <hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/>
         <p style="color:#888;font-size:12px">Sent by a Perch administrator.</p>
+      </div>
+    `,
+  });
+}
+
+/**
+ * Tell a candidate their application moved.
+ *
+ * This is the email that closes the "application black hole": for most seekers
+ * silence, not rejection, is the complaint. Copy is written to be readable on
+ * its own — a candidate who applied weeks ago needs the role and the company
+ * named, not just a status word.
+ */
+export async function sendApplicationStatusEmail(input: {
+  to: string;
+  jobTitle: string;
+  companyName: string;
+  status: SeekerStatus;
+  /** Optional words from the recruiter, shown verbatim to the candidate. */
+  message: string | null;
+}): Promise<SendResult> {
+  const { headline, subject } = STATUS_COPY[input.status](input);
+  const link = `${SITE_URL}/dashboard`;
+
+  const lines = [
+    headline,
+    input.message ? `From ${input.companyName}: ${input.message}` : null,
+    `See all your applications: ${link}`,
+  ].filter(Boolean) as string[];
+
+  return send({
+    to: input.to,
+    subject,
+    text: lines.join("\n\n"),
+    html: `
+      <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1b1a16">
+        <p>${escapeHtml(headline)}</p>
+        ${input.message ? `<blockquote style="border-left:3px solid #ddd;margin:0;padding-left:12px;color:#555">${escapeHtml(input.message)}</blockquote>` : ""}
+        <p><a href="${link}" style="color:#1e5f45;font-weight:600">View your applications →</a></p>
+      </div>
+    `,
+  });
+}
+
+type StatusCopyInput = { jobTitle: string; companyName: string };
+
+const STATUS_COPY: Record<
+  SeekerStatus,
+  (input: StatusCopyInput) => { headline: string; subject: string }
+> = {
+  submitted: ({ jobTitle, companyName }) => ({
+    subject: `Application received — ${jobTitle}`,
+    headline: `${companyName} has your application for ${jobTitle}.`,
+  }),
+  in_review: ({ jobTitle, companyName }) => ({
+    subject: `${companyName} is reviewing your application`,
+    headline: `${companyName} has started reviewing your application for ${jobTitle}.`,
+  }),
+  interview: ({ jobTitle, companyName }) => ({
+    subject: `Interview stage — ${jobTitle}`,
+    headline: `${companyName} would like to move you to an interview for ${jobTitle}.`,
+  }),
+  offer: ({ jobTitle, companyName }) => ({
+    subject: `An offer from ${companyName}`,
+    headline: `${companyName} has marked your application for ${jobTitle} as an offer.`,
+  }),
+  hired: ({ jobTitle, companyName }) => ({
+    subject: `Congratulations — ${jobTitle}`,
+    headline: `${companyName} has marked you as hired for ${jobTitle}. Congratulations.`,
+  }),
+  not_selected: ({ jobTitle, companyName }) => ({
+    subject: `Update on your application — ${jobTitle}`,
+    headline:
+      `${companyName} has decided not to move forward with your application for ` +
+      `${jobTitle}. Thank you for the time you put into applying.`,
+  }),
+};
+
+/**
+ * The job-alert digest.
+ *
+ * One email per seeker per run, with a section per saved search, because the
+ * alternative — one email per alert — is how a useful product becomes a spam
+ * folder. Each row links straight to the job, and each section links back to
+ * the search so the seeker can widen or narrow it.
+ */
+export async function sendJobAlertEmail(input: {
+  to: string;
+  sections: {
+    label: string;
+    query: string;
+    jobs: { slug: string; title: string; company: { name: string } }[];
+  }[];
+}): Promise<SendResult> {
+  const total = input.sections.reduce((sum, section) => sum + section.jobs.length, 0);
+  const subject =
+    total === 1
+      ? "1 new job matching your alert"
+      : `${total} new jobs matching your alerts`;
+
+  const text = input.sections
+    .map((section) =>
+      [
+        `${section.label} (${section.jobs.length})`,
+        ...section.jobs.map(
+          (job) =>
+            `- ${job.title} at ${job.company.name}: ${SITE_URL}/jobs/${job.slug}`,
+        ),
+        `See all: ${SITE_URL}/jobs?${section.query}`,
+      ].join("\n"),
+    )
+    .join("\n\n");
+
+  const html = input.sections
+    .map(
+      (section) => `
+        <h2 style="font-size:16px;margin:24px 0 8px">${escapeHtml(section.label)}
+          <span style="color:#888;font-weight:400">(${section.jobs.length})</span>
+        </h2>
+        <ul style="margin:0;padding-left:18px">
+          ${section.jobs
+            .map(
+              (job) => `<li style="margin-bottom:6px">
+                <a href="${SITE_URL}/jobs/${job.slug}" style="color:#1e5f45;font-weight:600;text-decoration:none">${escapeHtml(job.title)}</a>
+                <span style="color:#555"> at ${escapeHtml(job.company.name)}</span>
+              </li>`,
+            )
+            .join("")}
+        </ul>
+        <p style="margin:8px 0 0">
+          <a href="${SITE_URL}/jobs?${section.query}" style="color:#1e5f45;font-size:13px">See all results →</a>
+        </p>`,
+    )
+    .join("");
+
+  return send({
+    to: input.to,
+    subject,
+    text,
+    html: `
+      <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1b1a16">
+        ${html}
+        <hr style="border:none;border-top:1px solid #ddd;margin:24px 0"/>
+        <p style="color:#888;font-size:12px">
+          You are getting this because you saved a job alert on Perch.
+          <a href="${SITE_URL}/alerts" style="color:#888">Manage your alerts</a>.
+        </p>
+      </div>
+    `,
+  });
+}
+
+/**
+ * Invite someone onto a company team.
+ *
+ * The token in this link is a bearer credential, so the copy names who sent
+ * it and which company it is for: an invitation a recipient cannot place is
+ * indistinguishable from a phishing attempt and gets deleted.
+ */
+export async function sendTeamInviteEmail(input: {
+  to: string;
+  companyName: string;
+  invitedByName: string;
+  role: "admin" | "recruiter";
+  token: string;
+}): Promise<SendResult> {
+  const link = `${SITE_URL}/join?token=${encodeURIComponent(input.token)}`;
+  const roleLabel = input.role === "admin" ? "an admin" : "a recruiter";
+  const headline =
+    `${input.invitedByName} invited you to join ${input.companyName} on Perch ` +
+    `as ${roleLabel}.`;
+
+  const lines = [
+    headline,
+    "You will be able to post jobs and review applicants for that company.",
+    `Accept the invitation: ${link}`,
+    "The link expires in 14 days.",
+  ];
+
+  return send({
+    to: input.to,
+    subject: `Join ${input.companyName} on Perch`,
+    text: lines.join("\n\n"),
+    html: `
+      <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1b1a16">
+        <p>${escapeHtml(headline)}</p>
+        <p style="color:#555">You will be able to post jobs and review applicants
+        for that company.</p>
+        <p><a href="${link}" style="color:#1e5f45;font-weight:600">Accept the invitation →</a></p>
+        <p style="color:#888;font-size:12px">The link expires in 14 days. If you
+        were not expecting this, you can ignore this email.</p>
       </div>
     `,
   });

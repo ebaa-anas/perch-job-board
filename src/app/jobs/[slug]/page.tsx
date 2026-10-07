@@ -7,6 +7,12 @@ import { getProfile } from "@/features/auth/session";
 import { getOwnCompany } from "@/features/companies/data";
 import { getOwnSeekerProfile } from "@/features/profiles/data";
 import { hasApplied } from "@/features/applications/data";
+import { buildJobPostingJsonLd } from "@/features/jobs/job-posting-jsonld";
+import { TrackJobView } from "@/features/analytics/components/track-job-view";
+
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+).replace(/\/+$/, "");
 
 export async function generateMetadata({
   params,
@@ -17,6 +23,13 @@ export async function generateMetadata({
   return {
     title: `${job.title} · ${job.company.name}`,
     description: job.description.slice(0, 155),
+    alternates: { canonical: `${SITE_URL}/jobs/${job.slug}` },
+    openGraph: {
+      type: "article",
+      title: `${job.title} · ${job.company.name}`,
+      description: job.description.slice(0, 155),
+      url: `${SITE_URL}/jobs/${job.slug}`,
+    },
   };
 }
 
@@ -60,8 +73,17 @@ export default async function JobDetailPage({
     getJobQuestions(job.id),
   ]);
 
+  const jsonLd = buildJobPostingJsonLd(job, SITE_URL);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      {/* Google for Jobs eligibility. Rendered server-side so it is present in
+          the initial HTML, which is all a crawler reads. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <TrackJobView jobId={job.id} />
       <JobDetail job={job} apply={apply} questions={questions} />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimitRequest } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfile } from "@/features/auth/session";
 import { isAdminEmail } from "@/features/auth/admin-emails";
@@ -105,6 +106,9 @@ export async function signUp(input: {
   if (!role) return { error: "Choose whether you're looking for work or hiring." };
   if (!input.email || !input.password) {
     return { error: "Email and password are required." };
+  }
+  if (!(await rateLimitRequest("signup"))) {
+    return { error: "Too many sign-up attempts from this connection. Try again later." };
   }
 
   const supabase = await createClient();

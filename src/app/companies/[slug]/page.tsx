@@ -14,6 +14,8 @@ import { getProfile } from "@/features/auth/session";
 import { ReportCompanyButton } from "@/features/companies/components/report-company-dialog";
 import { CompanyReviews } from "@/features/companies/components/company-reviews";
 import { Stars } from "@/features/companies/components/stars";
+import { getCompanyResponseRate } from "@/features/applications/data";
+import { ResponseRateBadge } from "@/features/applications/components/response-rate-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -48,11 +50,12 @@ export default async function CompanyPublicPage({
   const suspended = Boolean(company.suspendedAt);
   const showJobs = !suspended || isAdmin || isOwner;
 
-  const [jobs, summary, reviews, ownReview] = await Promise.all([
+  const [jobs, summary, reviews, ownReview, responseRate] = await Promise.all([
     showJobs ? getCompanyJobs(company.id) : Promise.resolve([]),
     getReviewSummary(company.id),
     getCompanyReviews(company.id),
     isSeeker && !isOwner ? getOwnReview(company.id) : Promise.resolve(null),
+    getCompanyResponseRate(company.id),
   ]);
 
   return (
@@ -91,6 +94,14 @@ export default async function CompanyPublicPage({
           )}
           {company.tagline && (
             <p className="mt-1 text-muted-foreground">{company.tagline}</p>
+          )}
+          {responseRate && (
+            <p className="mt-1.5">
+              <ResponseRateBadge
+                rate={responseRate.rate}
+                total={responseRate.total}
+              />
+            </p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
             {company.website && (

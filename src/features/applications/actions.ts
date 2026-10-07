@@ -6,8 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/features/auth/session";
 import { sendNewApplicantEmail } from "@/lib/email";
+import { rateLimitRequest } from "@/lib/rate-limit";
 import { applySchema } from "@/features/applications/schema";
 import { buildAnswersSchema } from "@/features/applications/answers";
+import { findKnockout } from "@/features/applications/knockout";
 import { getJobQuestions } from "@/features/jobs/data";
 import type { JobApplicationQuestion } from "@/features/jobs/types";
 import type { Json } from "@/lib/supabase/database.types";
@@ -44,6 +46,13 @@ export async function applyToJob(input: {
   answers?: Record<string, string | boolean>;
 }): Promise<ApplyResult> {
   const profile = await requireRole("seeker");
+
+  if (!(await rateLimitRequest("apply"))) {
+    return {
+      ok: false,
+      error: "Too many applications from this connection. Try again in an hour.",
+    };
+  }
 
   const parsed = applySchema.safeParse({
     note: input.note,
@@ -87,6 +96,21 @@ export async function applyToJob(input: {
       if (typeof key === "string" && !fieldErrors[key]) fieldErrors[key] = issue.message;
     }
     return { ok: false, error: "Please answer the required questions.", fieldErrors };
+  }
+
+  // Screening gates. Refused here, before any row is written, so the seeker
+  // is told now rather than after weeks of silence — and so the recruiter's
+  // pipeline is not filled with applications that were never eligible.
+  const blocked = findKnockout(questions, answersResult.data);
+  if (blocked) {
+    return {
+      ok: false,
+      error:
+        `This employer only accepts applications that answer ` +
+        `“${blocked.label}” differently. Your answer means you are ` +
+        `not eligible for this role.`,
+      fieldErrors: { [blocked.id]: "This answer makes you ineligible." },
+    };
   }
 
   const attach = parsed.data.attachCv && seeker.cv_path;
