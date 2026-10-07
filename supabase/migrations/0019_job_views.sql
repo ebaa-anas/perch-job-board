@@ -64,7 +64,10 @@ begin
   insert into public.job_views (job_id, day, views)
   values (p_job, (now() at time zone 'utc')::date, 1)
   on conflict (job_id, day)
-  do update set views = public.job_views.views + 1;
+  -- The existing row is addressed by the table's bare name here; a
+  -- schema-qualified reference is not the documented form for
+  -- ON CONFLICT DO UPDATE.
+  do update set views = job_views.views + 1;
 end;
 $$;
 

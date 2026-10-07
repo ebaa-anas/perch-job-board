@@ -373,8 +373,16 @@ grant execute on function public.accept_company_invite(text) to authenticated;
 -- ----------------------------------------------------------------------------
 -- 10. transfer_company_ownership(company, to_profile)
 --
---     Both role rows move in one statement so the single-owner index is never
---     transiently violated, and only the sitting owner may call it.
+--     Only the sitting owner may call it.
+--
+--     The two role rows move in *separate* statements, and the order matters.
+--     `company_members_single_owner_idx` is a partial UNIQUE index, which is
+--     non-deferrable and validated per row as an UPDATE proceeds. Moving both
+--     rows in one statement would leave two 'owner' rows for the company
+--     transiently whenever the planner happens to update the incoming owner
+--     first, and the transfer would fail with a unique violation depending on
+--     physical row order. Demoting first is always safe: the function runs in
+--     one transaction, so no other session ever observes the ownerless gap.
 -- ----------------------------------------------------------------------------
 create or replace function public.transfer_company_ownership(
   p_company uuid,
@@ -408,12 +416,12 @@ begin
   end if;
 
   update public.company_members
-  set role = case
-    when profile_id = p_to   then 'owner'
-    when profile_id = caller then 'admin'
-    else role
-  end
-  where company_id = p_company and profile_id in (p_to, caller);
+  set role = 'admin'
+  where company_id = p_company and profile_id = caller;
+
+  update public.company_members
+  set role = 'owner'
+  where company_id = p_company and profile_id = p_to;
 
   -- Keep the denormalised anchor on `companies` in step; the delete policy
   -- and billing both still read it.

@@ -77,8 +77,13 @@ create policy "notifications readable by owner"
   on public.notifications for select to authenticated
   using (profile_id = auth.uid());
 
--- Marking as read is the only field a recipient may change; the columns that
--- carry the content are not writable by anyone through RLS at all.
+-- Lets a recipient mark their own notifications read. Note that RLS cannot
+-- restrict an UPDATE to a subset of columns, so this technically also allows
+-- someone to rewrite the title or body of a notification addressed to them.
+-- That is harmless — it is their own row and nobody else can read it — and
+-- the alternative (a trigger pinning every content column) is machinery for
+-- no gain. It is called out here so the next reader does not assume the
+-- narrower guarantee.
 drop policy if exists "notifications marked read by owner" on public.notifications;
 create policy "notifications marked read by owner"
   on public.notifications for update to authenticated
