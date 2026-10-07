@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfile } from "@/features/auth/session";
+import { isAdminEmail } from "@/features/auth/admin-emails";
 import { AUTH_ROLES, type AuthRole } from "@/features/auth/schema";
 import { safeRelativePath } from "@/features/auth/redirect";
 
@@ -46,36 +47,48 @@ export async function destForRole(): Promise<string> {
 }
 
 /**
- * Promote the signed-in user to `admin` when their email is registered in
- * `admin_emails` and their profile role isn't already `admin`. Runs with the
- * service-role client because `admin_emails` has no RLS read policy and the
- * profile write must bypass the "update own profile" check.
+ * Reconcile the signed-in user's `admin` role with `admin_emails`, in both
+ * directions.
+ *
+ * Promotion alone left a one-way door: someone removed from `admin_emails` kept
+ * `profiles.role = 'admin'` forever, because nothing ever wrote it back. Taking
+ * an admin's access away meant editing the list *and* remembering to fix the
+ * row by hand. Now a login settles it either way.
+ *
+ * Demotion sets NULL rather than 'seeker' so the next request lands in
+ * onboarding and the person chooses, instead of this function picking for them.
+ *
+ * Runs with the service-role client: `admin_emails` has no RLS read policy, and
+ * the write has to get past both the "update own profile" policy and the 0003
+ * role-immutability trigger, which lets `service_role` through by design.
+ *
+ * `requireRole('admin')` re-checks the same list on every admin request, so a
+ * removal takes effect immediately rather than waiting for the next login.
  */
 export async function maybeUpgradeAdmin(): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const email = user?.email?.toLowerCase();
-  if (!user || !email) return;
+  if (!user?.email) return;
 
   const admin = createAdminClient();
-
-  // `admin_emails` is a tiny config table; pull it and compare case-insensitively
-  // to mirror the SQL `is_admin()` (`lower(email) = lower(...)`) exactly and to
-  // avoid ILIKE treating `_`/`%` in an address as wildcards.
-  const { data: rows } = await admin.from("admin_emails").select("email");
-  const listed = (rows ?? []).some((r) => r.email.toLowerCase() === email);
-  if (!listed) return;
+  const listed = await isAdminEmail(user.email);
 
   const { data: profile } = await admin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (profile?.role === "admin") return;
+  if (!profile) return;
 
-  await admin.from("profiles").update({ role: "admin" }).eq("id", user.id);
+  if (listed && profile.role !== "admin") {
+    await admin.from("profiles").update({ role: "admin" }).eq("id", user.id);
+    return;
+  }
+  if (!listed && profile.role === "admin") {
+    await admin.from("profiles").update({ role: null }).eq("id", user.id);
+  }
 }
 
 // ---------------------------------------------------------------------------
