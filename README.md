@@ -11,8 +11,25 @@ lives in Supabase Postgres with row-level security as the boundary.
 - **Supabase** — Postgres, Auth (email + Google), Storage, RLS; `@supabase/ssr`
 - **React Hook Form + Zod** for every form
 - **Resend** (REST) for the "new applicant" email — optional, degrades gracefully
+- **Postgres-backed rate limiting** on the public write paths (apply, signup,
+  reviews) — counters live in the database because serverless functions share
+  no memory
 - **Claude** (REST, Anthropic Messages API) for the seeker-facing AI fit score — optional, degrades gracefully; scores are cached per (seeker, job) and capped at 50 fresh scorings per seeker per day
 - **lucide-react** icons
+- **Vercel Cron** for the daily job-alert digest (`/api/alerts/run`)
+
+## Company teams
+
+A company has many recruiters. `company_members` holds the seats
+(`owner` / `admin` / `recruiter`) and is the single source of authorisation:
+migration 0018 redefines the `owns_company()`, `owns_job()` and
+`owns_application()` SQL helpers in terms of membership, so every policy
+written against them became team-aware without being edited. Seats are
+one-per-person, which keeps every "my company" read single-valued.
+
+Joining happens only through `accept_company_invite()` — an invitee is by
+definition not yet a member, so no RLS policy could admit them without also
+admitting self-insertion into any company.
 
 ## Roles & routes
 
@@ -26,16 +43,25 @@ PUBLIC
   /auth/callback /auth/reset /auth/auth-code-error
 
 SEEKER (role='seeker')
-  /dashboard            "My applications" + quick links
+  /dashboard            "My applications" (with employer status) + quick links
   /profile             headline, skills, links, CV upload
   /saved-jobs          shortlist (localStorage as guest, DB when signed in)
+  /alerts              saved searches + daily/weekly digest frequency
+
+ANY SIGNED-IN USER
+  /notifications       in-app notification centre
 
 RECRUITER (role='recruiter')
   /dashboard                    own jobs grouped by status + applicant counts
+  /dashboard/analytics          per-job funnel: views, apply rate, reply time
   /dashboard/jobs/new           post (draft | publish)
   /dashboard/jobs/[id]/edit
-  /dashboard/jobs/[id]/applicants   list + detail drawer + CV download
+  /dashboard/jobs/[id]/applicants   list + stage filter + bulk moves +
+                                    detail drawer (pipeline, rating,
+                                    internal notes, history) + CV download
   /company                     company profile + logo
+  /company/team                seats, invitations, ownership transfer
+  /join?token=…                accept a team invitation (any signed-in user)
 
 ADMIN (email in admin_emails → role auto-upgraded on login)
   /admin               jobs / users / demo-data moderation
@@ -44,10 +70,16 @@ API
   GET /api/jobs        public JSON list (same query params)
   GET /api/jobs/[slug] one job
   GET /api/health      weekly Vercel Cron keep-alive
+  GET /api/alerts/run  daily Vercel Cron; sends job-alert digests (CRON_SECRET)
+
+SEO
+  /sitemap.xml         published jobs + companies with open roles (1h revalidate)
+  /robots.txt          allows the public board, disallows every auth-gated path
+  /jobs/[slug]         emits schema.org JobPosting JSON-LD (Google for Jobs)
 ```
 
 Route protection: `proxy.ts` redirects signed-out users off `/dashboard`,
-`/profile`, `/company`, `/admin`; each of those segments' `layout.tsx` enforces
+`/profile`, `/company`, `/admin`, `/alerts`, `/notifications`; each of those segments' `layout.tsx` enforces
 the exact role via `requireRole`.
 
 ## Architecture
@@ -72,10 +104,15 @@ src/
     admin/                overview, tables, moderation actions
     marketing/            landing-page sections
     matching/             fit-score prompt, schema, cached action, score card
+    alerts/               saved searches, due-check, digest runner, UI
+    notifications/        in-app notification centre (read + write helpers)
+    seo/                  sitemap/robots data (service-role, session-free)
+    team/                 seats, roles/capabilities, invites, ownership
+    analytics/            view counting + per-job funnel maths
   lib/supabase/            server / client / admin / proxy factories
   lib/i18n/                locale cookie, provider, en/tr dictionaries
   lib/                     slug, email, claude, utils
-supabase/migrations/       0001 schema → 0012 content language
+supabase/migrations/       0001 schema → 0020 screening gates
 ```
 
 ## Local development

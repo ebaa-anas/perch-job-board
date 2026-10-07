@@ -116,4 +116,10 @@ export interface JobApplicationQuestion {
   required: boolean;
   /** Only meaningful for `multiple_choice`. */
   options: string[];
+  /**
+   * The one answer that lets an application through, turning this question
+   * into a screening gate. Null for an ordinary question. Only honoured for
+   * `yes_no` and `multiple_choice` — see `findKnockout`.
+   */
+  knockoutAnswer: string | null;
 }

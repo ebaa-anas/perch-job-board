@@ -25,11 +25,23 @@ export const applicationQuestionSchema = z
     // zodResolver's input type diverge from `JobEditorValues` (the output
     // type `useForm` is typed with), which TypeScript rejects.
     options: z.array(z.string().trim().min(1)).max(6),
+    /** Empty string means "not a gate"; normalised to null on write. */
+    knockoutAnswer: z.string().trim().max(200),
   })
   .refine((q) => q.type !== "multiple_choice" || q.options.length >= 2, {
     path: ["options"],
     message: "Add at least 2 options",
-  });
+  })
+  .refine(
+    (q) =>
+      !q.knockoutAnswer ||
+      q.type === "yes_no" ||
+      (q.type === "multiple_choice" && q.options.includes(q.knockoutAnswer)),
+    {
+      path: ["knockoutAnswer"],
+      message: "The required answer must be one of this question's options",
+    },
+  );
 
 export type ApplicationQuestionValues = z.infer<typeof applicationQuestionSchema>;
 

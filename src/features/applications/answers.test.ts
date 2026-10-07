@@ -10,6 +10,7 @@ function question(overrides: Partial<JobApplicationQuestion>): JobApplicationQue
     type: "short_text",
     required: true,
     options: [],
+    knockoutAnswer: null,
     ...overrides,
   };
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Users } from "lucide-react";
 
 import { getProfile } from "@/features/auth/session";
 import { getOwnCompany } from "@/features/companies/data";
@@ -22,13 +22,22 @@ export default async function CompanyPage() {
           </p>
         </div>
         {company && (
-          <Link
-            href={`/companies/${company.slug}`}
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-          >
-            View public page
-            <ArrowUpRight className="size-4" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/company/team"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              <Users className="size-4" />
+              Team
+            </Link>
+            <Link
+              href={`/companies/${company.slug}`}
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              View public page
+              <ArrowUpRight className="size-4" />
+            </Link>
+          </div>
         )}
       </header>
 

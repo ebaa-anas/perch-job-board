@@ -3,11 +3,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowRight,
+  Bell,
   Bookmark,
   Building2,
+  ChartNoAxesColumn,
   FileText,
   Plus,
   Search,
+  Users,
 } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -20,12 +23,14 @@ import {
   getMyApplications,
 } from "@/features/applications/data";
 import { formatRelativeDate } from "@/features/jobs/utils";
+import { StatusBadge } from "@/features/applications/components/stage-badge";
 
 export const metadata: Metadata = { title: "Dashboard", robots: { index: false, follow: false } };
 
 const SEEKER_LINKS = [
   { href: "/jobs", label: "Browse jobs", icon: Search },
   { href: "/saved-jobs", label: "Saved jobs", icon: Bookmark },
+  { href: "/alerts", label: "Job alerts", icon: Bell },
   { href: "/profile", label: "Your profile", icon: FileText },
 ];
 
@@ -53,13 +58,29 @@ export default async function DashboardPage() {
             <h1 className="font-display mt-1 text-4xl">{greeting}</h1>
           </div>
           {company && (
-            <Link
-              href="/dashboard/jobs/new"
-              className={buttonVariants({ size: "lg" })}
-            >
-              <Plus className="size-4" />
-              Post a job
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/dashboard/analytics"
+                className={buttonVariants({ variant: "outline", size: "lg" })}
+              >
+                <ChartNoAxesColumn className="size-4" />
+                Analytics
+              </Link>
+              <Link
+                href="/company/team"
+                className={buttonVariants({ variant: "outline", size: "lg" })}
+              >
+                <Users className="size-4" />
+                Team
+              </Link>
+              <Link
+                href="/dashboard/jobs/new"
+                className={buttonVariants({ size: "lg" })}
+              >
+                <Plus className="size-4" />
+                Post a job
+              </Link>
+            </div>
           )}
         </div>
 
@@ -133,13 +154,19 @@ export default async function DashboardPage() {
                       {app.job.company.name}
                     </Link>{" "}
                     · applied {formatRelativeDate(app.createdAt)}
+                    {app.decidedAt
+                      ? ` · answered ${formatRelativeDate(app.decidedAt)}`
+                      : ""}
                   </p>
                 </div>
-                {app.job.status !== "published" && (
-                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                    {app.job.status === "closed" ? "Role closed" : "Not live"}
-                  </span>
-                )}
+                <div className="flex shrink-0 items-center gap-2">
+                  {app.job.status !== "published" && (
+                    <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                      {app.job.status === "closed" ? "Role closed" : "Not live"}
+                    </span>
+                  )}
+                  <StatusBadge status={app.status} />
+                </div>
               </li>
             ))}
           </ul>
@@ -147,7 +174,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-10">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {SEEKER_LINKS.map((link) => (
             <Link
               key={link.href}

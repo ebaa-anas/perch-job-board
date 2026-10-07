@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { requireRole, requireUser } from "@/features/auth/session";
+import { getOwnMembership } from "@/features/team/data";
+import { can } from "@/features/team/roles";
 import { pickFreeSlug, slugify } from "@/lib/slug";
 import {
   companySchema,
@@ -52,11 +54,20 @@ export async function upsertCompany(
   }
 
   const supabase = await createClient();
-  const { data: existing } = await supabase
-    .from("companies")
-    .select("id")
-    .eq("owner_id", profile.id)
-    .maybeSingle();
+  const membership = await getOwnMembership();
+
+  // Editing an existing company is an owner/admin act: a plain recruiter seat
+  // can post jobs but not rewrite the company's public profile. RLS enforces
+  // this through `can_manage_company()`; checking here turns a silently empty
+  // update into a sentence the recruiter can act on.
+  if (membership && !can(membership.role, "edit_company")) {
+    return {
+      ok: false,
+      error: "Only an owner or admin can edit the company profile.",
+    };
+  }
+
+  const existing = membership ? { id: membership.companyId } : null;
 
   const slug = await uniqueSlug(
     supabase,
@@ -104,24 +115,35 @@ export async function setCompanyLogo(
   if (!path.startsWith(`${profile.id}/`)) {
     return { ok: false, error: "That file isn't in your folder." };
   }
+
+  const membership = await getOwnMembership();
+  if (!membership || !can(membership.role, "edit_company")) {
+    return { ok: false, error: "Only an owner or admin can change the logo." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("companies")
     .update({ logo_path: path })
-    .eq("owner_id", profile.id);
+    .eq("id", membership.companyId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/company");
   return { ok: true, data: { path } };
 }
 
 export async function removeCompanyLogo(): Promise<ActionResult<null>> {
-  const profile = await requireRole("recruiter");
+  await requireRole("recruiter");
+  const membership = await getOwnMembership();
+  if (!membership || !can(membership.role, "edit_company")) {
+    return { ok: false, error: "Only an owner or admin can change the logo." };
+  }
+
   const supabase = await createClient();
 
   const { data: company } = await supabase
     .from("companies")
     .select("logo_path")
-    .eq("owner_id", profile.id)
+    .eq("id", membership.companyId)
     .maybeSingle();
 
   if (company?.logo_path) {
@@ -130,7 +152,7 @@ export async function removeCompanyLogo(): Promise<ActionResult<null>> {
   const { error } = await supabase
     .from("companies")
     .update({ logo_path: null })
-    .eq("owner_id", profile.id);
+    .eq("id", membership.companyId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/company");
   return { ok: true, data: null };

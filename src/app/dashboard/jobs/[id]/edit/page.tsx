@@ -38,6 +38,7 @@ export default async function EditJobPage({
       type: q.type,
       required: q.required,
       options: q.options,
+      knockoutAnswer: q.knockoutAnswer ?? "",
     })),
   };
 

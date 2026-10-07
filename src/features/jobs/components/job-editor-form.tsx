@@ -65,6 +65,7 @@ const BLANK_QUESTION: ApplicationQuestionValues = {
   type: "short_text",
   required: true,
   options: [],
+  knockoutAnswer: "",
 };
 
 function Section({
@@ -142,6 +143,13 @@ export function JobEditorForm({
           type: q.type,
           required: q.required,
           options: q.type === "multiple_choice" ? q.options : [],
+          // A gate only means something for yes/no and multiple choice; drop
+          // it if the recruiter changed the type after setting one, so the
+          // saved question matches what the form now shows.
+          knockoutAnswer:
+            q.type === "yes_no" || q.type === "multiple_choice"
+              ? q.knockoutAnswer
+              : "",
         })),
       };
 
@@ -324,6 +332,7 @@ export function JobEditorForm({
               onRemove={() => questionArray.remove(index)}
               labelError={errors.questions?.[index]?.label?.message}
               optionsError={errors.questions?.[index]?.options?.message}
+              knockoutError={errors.questions?.[index]?.knockoutAnswer?.message}
             />
           ))}
           <Button
@@ -392,6 +401,7 @@ function QuestionRow({
   onRemove,
   labelError,
   optionsError,
+  knockoutError,
 }: {
   index: number;
   control: Control<JobEditorValues>;
@@ -401,9 +411,14 @@ function QuestionRow({
   onRemove: () => void;
   labelError?: string;
   optionsError?: string;
+  knockoutError?: string;
 }) {
   const [optionsText, setOptionsText] = React.useState(defaultOptions.join("\n"));
   const type = useWatch({ control, name: `questions.${index}.type` });
+  // Watched, not read from local state: the gate offers this question's own
+  // options as its choices, so editing the options must re-render it.
+  const options: string[] =
+    useWatch({ control, name: `questions.${index}.options` }) ?? [];
 
   return (
     <div className="space-y-3 rounded-lg border border-border p-4">
@@ -461,6 +476,44 @@ function QuestionRow({
           />
           {optionsError && (
             <p className="text-xs text-red-600 dark:text-red-400">{optionsError}</p>
+          )}
+        </div>
+      )}
+
+      {(type === "yes_no" || type === "multiple_choice") && (
+        <div className="space-y-1.5 border-t border-border pt-3">
+          <label
+            htmlFor={`knockout-${index}`}
+            className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
+            Screening gate (optional)
+          </label>
+          <Select
+            id={`knockout-${index}`}
+            className="w-auto"
+            {...register(`questions.${index}.knockoutAnswer`)}
+          >
+            <option value="">No gate — accept any answer</option>
+            {type === "yes_no" ? (
+              <>
+                <option value="yes">Only accept Yes</option>
+                <option value="no">Only accept No</option>
+              </>
+            ) : (
+              options.map((option) => (
+                <option key={option} value={option}>
+                  Only accept &ldquo;{option}&rdquo;
+                </option>
+              ))
+            )}
+          </Select>
+          {knockoutError ? (
+            <p className="text-xs text-red-600 dark:text-red-400">{knockoutError}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Anyone answering otherwise is told straight away that they are not
+              eligible, instead of waiting for a reply.
+            </p>
           )}
         </div>
       )}
