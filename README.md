@@ -19,6 +19,11 @@ lives in Supabase Postgres with row-level security as the boundary.
   and every point here is attributable to a named skill tag
 - **Salary benchmarking** from the board's own postings, published only above a
   10-posting threshold so no single employer's range is recoverable
+- **Inclusive-language hints** on the job editor — a fixed word list, not a
+  model, so it is explainable, free, and never sends an unpublished posting
+  anywhere
+- **Skills-to-add** for seekers, aggregated from the roles they saved or applied
+  to — the same matching logic pointed the other way
 - **Claude** (REST, Anthropic Messages API) for the seeker-facing AI fit score — optional, degrades gracefully; scores are cached per (seeker, job) and capped at 50 fresh scorings per seeker per day
 - **lucide-react** icons
 - **Vercel Cron** for the daily job-alert digest (`/api/alerts/run`)
@@ -44,12 +49,14 @@ PUBLIC
   /jobs                 browse: ?q ?type ?mode ?level ?minSalary ?sort
   /jobs/[slug]          job detail + apply + pay-in-context benchmark
   /companies/[slug]     company profile + its published jobs
+  /salaries             public pay explorer (median + quartiles by level)
   /login /signup /onboarding
   /auth/callback /auth/reset /auth/auth-code-error
 
 SEEKER (role='seeker')
   /dashboard            "My applications" (with employer status) + quick links
-  /profile             headline, skills, links, CV upload
+  /profile             headline, skills, links, CV upload, skills-to-add,
+                       data export + account deletion (KVKK/GDPR)
   /saved-jobs          shortlist (localStorage as guest, DB when signed in)
   /alerts              saved searches + daily/weekly digest frequency
 
@@ -116,10 +123,11 @@ src/
     team/                 seats, roles/capabilities, invites, ownership
     analytics/            view counting + per-job funnel maths
     salary/               pay benchmarking from the board's own corpus
+    privacy/              subject-access export + self-service erasure
   lib/supabase/            server / client / admin / proxy factories
   lib/i18n/                locale cookie, provider, en/tr dictionaries
   lib/                     slug, email, claude, utils
-supabase/migrations/       0001 schema → 0020 screening gates
+supabase/migrations/       0001 schema → 0021 monetisation and trust
 ```
 
 ## Local development

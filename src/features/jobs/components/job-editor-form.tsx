@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { InclusiveLanguageHints } from "@/features/jobs/components/inclusive-language-hints";
 import {
   CONTENT_LANGUAGES,
   EXPERIENCE_LABELS,
@@ -67,6 +68,18 @@ const BLANK_QUESTION: ApplicationQuestionValues = {
   options: [],
   knockoutAnswer: "",
 };
+
+/**
+ * Lints all four prose fields together, so a phrase in the requirements is
+ * caught as readily as one in the description.
+ */
+function WordingHints({ control }: { control: Control<JobEditorValues> }) {
+  const parts = useWatch({
+    control,
+    name: ["description", "responsibilities", "requirements", "perks"],
+  });
+  return <InclusiveLanguageHints text={(parts ?? []).filter(Boolean).join("\n")} />;
+}
 
 function Section({
   title,
@@ -280,6 +293,7 @@ export function JobEditorForm({
         <Field label="Perks & benefits" htmlFor="perks" error={errors.perks?.message} hint="Optional. One per line.">
           <Textarea id="perks" rows={3} {...register("perks")} />
         </Field>
+        <WordingHints control={control} />
       </Section>
 
       <Section title="Apply & skills" description="Applications are always submitted on Perch. Add the skills that matter.">

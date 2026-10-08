@@ -13,6 +13,13 @@ import { anonClient, serviceClient } from "@/test/setup-integration";
  * single-recruiter case; nothing proved the new paths worked, or — more
  * importantly — that they had not opened a hole between companies.
  *
+ * Note on cost: each distinct user here is a `signInWithPassword` call, and
+ * Supabase applies its own per-IP auth rate limit independently of this
+ * product's. Running the whole integration suite several times in quick
+ * succession can exhaust it and fail these files in `beforeAll` with
+ * "Request rate limit reached" — a platform quota, not a defect. Keep the
+ * user count here to what the assertions genuinely need.
+ *
  * Every positive assertion is paired with the negative one that would catch
  * an over-permissive policy. A test that only checks "the teammate can read
  * it" would pass just as happily if the table were readable by everyone.
@@ -26,7 +33,6 @@ const seatRecruiter = { email: `it-team-sr-${stamp}@perch.test`, id: "" };
 const seatAdmin = { email: `it-team-sa-${stamp}@perch.test`, id: "" };
 const outsider = { email: `it-team-out-${stamp}@perch.test`, id: "" };
 const invitee = { email: `it-team-inv-${stamp}@perch.test`, id: "" };
-const seekerInvitee = { email: `it-team-si-${stamp}@perch.test`, id: "" };
 const seekerA = { email: `it-team-ka-${stamp}@perch.test`, id: "" };
 const seekerB = { email: `it-team-kb-${stamp}@perch.test`, id: "" };
 
@@ -41,7 +47,6 @@ let seatRecruiterClient: SupabaseClient;
 let seatAdminClient: SupabaseClient;
 let outsiderClient: SupabaseClient;
 let inviteeClient: SupabaseClient;
-let seekerInviteeClient: SupabaseClient;
 let seekerAClient: SupabaseClient;
 let seekerBClient: SupabaseClient;
 
@@ -78,8 +83,7 @@ beforeAll(async () => {
     seatAdmin.id,
     outsider.id,
     invitee.id,
-    seekerInvitee.id,
-    seekerA.id,
+      seekerA.id,
     seekerB.id,
   ] = await Promise.all([
     makeUser(ownerA.email, "recruiter"),
@@ -87,7 +91,6 @@ beforeAll(async () => {
     makeUser(seatAdmin.email, "recruiter"),
     makeUser(outsider.email, "recruiter"),
     makeUser(invitee.email, "recruiter"),
-    makeUser(seekerInvitee.email, "seeker"),
     makeUser(seekerA.email, "seeker"),
     makeUser(seekerB.email, "seeker"),
   ]);
@@ -157,8 +160,7 @@ beforeAll(async () => {
     seatAdminClient,
     outsiderClient,
     inviteeClient,
-    seekerInviteeClient,
-    seekerAClient,
+      seekerAClient,
     seekerBClient,
   ] = await Promise.all([
     signIn(ownerA.email),
@@ -166,7 +168,6 @@ beforeAll(async () => {
     signIn(seatAdmin.email),
     signIn(outsider.email),
     signIn(invitee.email),
-    signIn(seekerInvitee.email),
     signIn(seekerA.email),
     signIn(seekerB.email),
   ]);
@@ -183,7 +184,6 @@ afterAll(async () => {
     seatAdmin,
     outsider,
     invitee,
-    seekerInvitee,
     seekerA,
     seekerB,
   ]) {
@@ -452,12 +452,12 @@ describe("invitations", () => {
   it("refuses a seeker account", async () => {
     await serviceClient().from("company_invites").insert({
       company_id: companyA,
-      email: seekerInvitee.email,
+      email: seekerA.email,
       role: "recruiter",
       token: seekerToken,
       invited_by: seatAdmin.id,
     });
-    const { data } = await seekerInviteeClient.rpc("accept_company_invite", {
+    const { data } = await seekerAClient.rpc("accept_company_invite", {
       p_token: seekerToken,
     });
     expect(data).toBe("not_recruiter");

@@ -4,13 +4,17 @@ import { getProfile } from "@/features/auth/session";
 import { getOwnSeekerProfile } from "@/features/profiles/data";
 import { SeekerProfileForm } from "@/features/profiles/components/seeker-profile-form";
 import { CvUpload } from "@/features/profiles/components/cv-upload";
+import { getOwnSkillGaps } from "@/features/matching/data";
+import { SkillGapsCard } from "@/features/matching/components/skill-gaps-card";
+import { PrivacyControls } from "@/features/privacy/components/privacy-controls";
 
 export const metadata: Metadata = { title: "Your profile" };
 
 export default async function ProfilePage() {
-  const [profile, seeker] = await Promise.all([
+  const [profile, seeker, skillGaps] = await Promise.all([
     getProfile(),
     getOwnSeekerProfile(),
+    getOwnSkillGaps(),
   ]);
 
   return (
@@ -24,6 +28,7 @@ export default async function ProfilePage() {
       </header>
 
       <div className="space-y-8">
+        <SkillGapsCard gaps={skillGaps.gaps} jobCount={skillGaps.jobCount} />
         <CvUpload
           uid={profile?.id ?? ""}
           currentFilename={seeker?.cvFilename ?? null}
@@ -40,6 +45,7 @@ export default async function ProfilePage() {
             githubUrl: seeker?.githubUrl ?? "",
           }}
         />
+        <PrivacyControls />
       </div>
     </div>
   );
