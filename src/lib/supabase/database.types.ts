@@ -292,51 +292,6 @@ export type Database = {
           },
         ]
       }
-      company_reports: {
-        Row: {
-          company_id: string
-          created_at: string
-          detail: string | null
-          id: string
-          reason: string
-          reporter_id: string
-          status: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          detail?: string | null
-          id?: string
-          reason: string
-          reporter_id: string
-          status?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          detail?: string | null
-          id?: string
-          reason?: string
-          reporter_id?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_reports_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_reports_reporter_id_fkey"
-            columns: ["reporter_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       company_invites: {
         Row: {
           accepted_at: string | null
@@ -380,6 +335,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "company_invites_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
@@ -416,9 +378,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "company_members_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_reports: {
+        Row: {
+          company_id: string
+          created_at: string
+          detail: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "company_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -467,10 +488,61 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "company_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "company_reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_application_questions: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          knockout_answer: string | null
+          label: string
+          options: string[]
+          position: number
+          required: boolean
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          knockout_answer?: string | null
+          label: string
+          options?: string[]
+          position?: number
+          required?: boolean
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          knockout_answer?: string | null
+          label?: string
+          options?: string[]
+          position?: number
+          required?: boolean
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_application_questions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -522,50 +594,6 @@ export type Database = {
             columns: ["seeker_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      job_application_questions: {
-        Row: {
-          created_at: string
-          id: string
-          knockout_answer: string | null
-          job_id: string
-          label: string
-          options: string[]
-          position: number
-          required: boolean
-          type: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          knockout_answer?: string | null
-          job_id: string
-          label: string
-          options?: string[]
-          position?: number
-          required?: boolean
-          type: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          knockout_answer?: string | null
-          job_id?: string
-          label?: string
-          options?: string[]
-          position?: number
-          required?: boolean
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "job_application_questions_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
-            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -679,6 +707,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -914,6 +949,7 @@ export type Database = {
     }
     Functions: {
       accept_company_invite: { Args: { p_token: string }; Returns: string }
+      can_manage_company: { Args: { target: string }; Returns: boolean }
       company_suspended: { Args: { target: string }; Returns: boolean }
       consume_rate_limit: {
         Args: {
@@ -924,16 +960,21 @@ export type Database = {
         }
         Returns: boolean
       }
-      can_manage_company: { Args: { target: string }; Returns: boolean }
       current_user_role: { Args: never; Returns: string }
       has_company_seat: { Args: never; Returns: boolean }
-      record_job_view: { Args: { p_job: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      is_application_applicant: {
+        Args: { target_application: string }
+        Returns: boolean
+      }
       is_company_member: { Args: { target: string }; Returns: boolean }
-      is_application_applicant: { Args: { target_application: string }; Returns: boolean }
-      owns_application: { Args: { target_application: string }; Returns: boolean }
+      owns_application: {
+        Args: { target_application: string }
+        Returns: boolean
+      }
       owns_company: { Args: { target: string }; Returns: boolean }
       owns_job: { Args: { target_job: string }; Returns: boolean }
+      record_job_view: { Args: { p_job: string }; Returns: undefined }
       transfer_company_ownership: {
         Args: { p_company: string; p_to: string }
         Returns: string
