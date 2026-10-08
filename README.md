@@ -14,6 +14,11 @@ lives in Supabase Postgres with row-level security as the boundary.
 - **Postgres-backed rate limiting** on the public write paths (apply, signup,
   reviews) — counters live in the database because serverless functions share
   no memory
+- **Transparent applicant matching** — deterministic skill overlap, not an AI
+  ranking: ranking applicants algorithmically is high-risk under the EU AI Act
+  and every point here is attributable to a named skill tag
+- **Salary benchmarking** from the board's own postings, published only above a
+  10-posting threshold so no single employer's range is recoverable
 - **Claude** (REST, Anthropic Messages API) for the seeker-facing AI fit score — optional, degrades gracefully; scores are cached per (seeker, job) and capped at 50 fresh scorings per seeker per day
 - **lucide-react** icons
 - **Vercel Cron** for the daily job-alert digest (`/api/alerts/run`)
@@ -37,7 +42,7 @@ admitting self-insertion into any company.
 PUBLIC
   /                     landing page
   /jobs                 browse: ?q ?type ?mode ?level ?minSalary ?sort
-  /jobs/[slug]          job detail + apply
+  /jobs/[slug]          job detail + apply + pay-in-context benchmark
   /companies/[slug]     company profile + its published jobs
   /login /signup /onboarding
   /auth/callback /auth/reset /auth/auth-code-error
@@ -110,6 +115,7 @@ src/
     seo/                  sitemap/robots data (service-role, session-free)
     team/                 seats, roles/capabilities, invites, ownership
     analytics/            view counting + per-job funnel maths
+    salary/               pay benchmarking from the board's own corpus
   lib/supabase/            server / client / admin / proxy factories
   lib/i18n/                locale cookie, provider, en/tr dictionaries
   lib/                     slug, email, claude, utils

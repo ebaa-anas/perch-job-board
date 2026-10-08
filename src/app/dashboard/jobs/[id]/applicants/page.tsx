@@ -44,6 +44,7 @@ export default async function ApplicantsPage({
           applicants={applicants}
           jobTitle={job.title}
           companyName={job.company.name}
+          jobTags={job.tags}
           events={events}
         />
       </div>

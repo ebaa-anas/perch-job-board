@@ -9,6 +9,8 @@ import { getOwnSeekerProfile } from "@/features/profiles/data";
 import { hasApplied } from "@/features/applications/data";
 import { buildJobPostingJsonLd } from "@/features/jobs/job-posting-jsonld";
 import { TrackJobView } from "@/features/analytics/components/track-job-view";
+import { getBenchmarkForJob } from "@/features/salary/data";
+import { SalaryBenchmark } from "@/features/salary/components/salary-benchmark";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
@@ -68,9 +70,10 @@ export default async function JobDetailPage({
   const job = await getJobBySlug(slug);
   if (!job) notFound();
 
-  const [apply, questions] = await Promise.all([
+  const [apply, questions, benchmark] = await Promise.all([
     resolveApplyContext(job.id, job.companyId),
     getJobQuestions(job.id),
+    getBenchmarkForJob(job.id),
   ]);
 
   const jsonLd = buildJobPostingJsonLd(job, SITE_URL);
@@ -85,6 +88,11 @@ export default async function JobDetailPage({
       />
       <TrackJobView jobId={job.id} />
       <JobDetail job={job} apply={apply} questions={questions} />
+      {benchmark && (
+        <div className="mt-6">
+          <SalaryBenchmark job={job} benchmark={benchmark} />
+        </div>
+      )}
     </div>
   );
 }

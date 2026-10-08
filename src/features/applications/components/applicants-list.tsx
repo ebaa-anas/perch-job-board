@@ -18,37 +18,62 @@ import {
 import { StageBadge } from "@/features/applications/components/stage-badge";
 import { StagePicker } from "@/features/applications/components/stage-picker";
 import { ApplicantActivity } from "@/features/applications/components/applicant-activity";
+import {
+  MatchBadge,
+  MatchDetail,
+} from "@/features/matching/components/match-badge";
+import { scoreApplicant, sortByMatch } from "@/features/matching/applicant-match";
 import type { ApplicationEvent, JobApplicant } from "@/features/applications/data";
 
 type StageFilter = ApplicationStage | "all" | "awaiting";
+
+type SortMode = "recent" | "match";
 
 export function ApplicantsList({
   applicants,
   jobTitle,
   companyName,
+  jobTags,
   events = {},
 }: {
   applicants: JobApplicant[];
   jobTitle: string;
   companyName: string;
+  /** The job's skill tags — what the match score is computed against. */
+  jobTags: string[];
   /** Keyed by application id — see `getJobApplicationEvents`. */
   events?: Record<string, ApplicationEvent[]>;
 }) {
   const [openId, setOpenId] = React.useState<string | null>(null);
   const [selected, setSelected] = React.useState<ReadonlySet<string>>(new Set());
   const [filter, setFilter] = React.useState<StageFilter>("all");
+  const [sort, setSort] = React.useState<SortMode>("recent");
+
+  // Computed here rather than server-side: it is pure, instant, and depends
+  // only on data already loaded, so there is nothing to fetch or cache.
+  const matches = React.useMemo(() => {
+    const byId: Record<string, ReturnType<typeof scoreApplicant>> = {};
+    for (const applicant of applicants) {
+      byId[applicant.id] = scoreApplicant({
+        jobTags,
+        seekerSkills: applicant.seeker.skills,
+      });
+    }
+    return byId;
+  }, [applicants, jobTags]);
 
   const active = applicants.find((a) => a.id === openId) ?? null;
 
-  const visible = React.useMemo(
-    () =>
-      applicants.filter((a) => {
-        if (filter === "all") return true;
-        if (filter === "awaiting") return !isDecided(a.stage);
-        return a.stage === filter;
-      }),
-    [applicants, filter],
-  );
+  const visible = React.useMemo(() => {
+    const filtered = applicants.filter((a) => {
+      if (filter === "all") return true;
+      if (filter === "awaiting") return !isDecided(a.stage);
+      return a.stage === filter;
+    });
+    return sort === "match"
+      ? sortByMatch(filtered, (a) => matches[a.id]?.score ?? null)
+      : filtered;
+  }, [applicants, filter, sort, matches]);
 
   const awaiting = applicants.filter((a) => !isDecided(a.stage)).length;
 
@@ -92,6 +117,21 @@ export function ApplicantsList({
             ))}
           </Select>
         </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="applicant-sort" className="text-sm text-muted-foreground">
+            Sort
+          </label>
+          <Select
+            id="applicant-sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortMode)}
+            className="h-9 w-auto"
+          >
+            <option value="recent">Most recent</option>
+            <option value="match">Best skills match</option>
+          </Select>
+        </div>
+
         {awaiting > 0 && (
           <p className="text-xs text-muted-foreground">
             {awaiting} {awaiting === 1 ? "person is" : "people are"} still waiting to
@@ -148,6 +188,9 @@ export function ApplicantsList({
                   {a.seeker.location ? ` · ${a.seeker.location}` : ""}
                 </span>
               </span>
+              <span className="hidden shrink-0 sm:block">
+                <MatchBadge match={matches[a.id]} />
+              </span>
               <span className="shrink-0">
                 <StageBadge stage={a.stage} />
               </span>
@@ -170,6 +213,7 @@ export function ApplicantsList({
           applicant={active}
           jobTitle={jobTitle}
           companyName={companyName}
+          matches={matches}
           events={events[active.id] ?? []}
           onClose={() => setOpenId(null)}
         />
@@ -250,12 +294,14 @@ function ApplicantDrawer({
   applicant,
   jobTitle,
   companyName,
+  matches,
   events,
   onClose,
 }: {
   applicant: JobApplicant;
   jobTitle: string;
   companyName: string;
+  matches: Record<string, ReturnType<typeof scoreApplicant>>;
   events: ApplicationEvent[];
   onClose: () => void;
 }) {
@@ -320,6 +366,8 @@ function ApplicantDrawer({
               <StageBadge stage={applicant.stage} />
             </p>
           </div>
+
+          <MatchDetail match={matches[applicant.id]} />
 
           <div className="rounded-lg border border-border bg-muted/30 p-3">
             <StagePicker
