@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/features/auth/session";
 import { sendNewApplicantEmail } from "@/lib/email";
-import { rateLimitRequest } from "@/lib/rate-limit";
+import { rateLimitSubject } from "@/lib/rate-limit";
 import { applySchema } from "@/features/applications/schema";
 import { buildAnswersSchema } from "@/features/applications/answers";
 import { findKnockout } from "@/features/applications/knockout";
@@ -47,10 +47,10 @@ export async function applyToJob(input: {
 }): Promise<ApplyResult> {
   const profile = await requireRole("seeker");
 
-  if (!(await rateLimitRequest("apply"))) {
+  if (!(await rateLimitSubject("apply", profile.id))) {
     return {
       ok: false,
-      error: "Too many applications from this connection. Try again in an hour.",
+      error: "You've sent a lot of applications in the last hour. Try again shortly.",
     };
   }
 

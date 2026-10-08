@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/features/auth/session";
-import { rateLimitRequest } from "@/lib/rate-limit";
+import { rateLimitSubject } from "@/lib/rate-limit";
 import { reviewSchema, type ReviewValues } from "@/features/companies/schema";
 
 type Result = { ok: boolean; error?: string };
@@ -14,8 +14,8 @@ export async function upsertReview(
   values: ReviewValues,
 ): Promise<Result> {
   const profile = await requireRole("seeker");
-  if (!(await rateLimitRequest("review"))) {
-    return { ok: false, error: "Too many reviews from this connection. Try again later." };
+  if (!(await rateLimitSubject("review", profile.id))) {
+    return { ok: false, error: "You've posted several reviews just now. Try again later." };
   }
   const parsed = reviewSchema.safeParse(values);
   if (!parsed.success) {

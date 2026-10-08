@@ -10,14 +10,22 @@ export interface RateLimitRule {
 }
 
 export const RATE_LIMITS = {
-  /** Applying is cheap for a bot and expensive for a recruiter's inbox. */
+  /**
+   * Applying is cheap for a bot and expensive for a recruiter's inbox. Keyed
+   * per account, not per address: a university lab or an office all share one
+   * NAT address, and this product's audience is disproportionately on exactly
+   * those networks. An IP key would throttle a whole campus collectively.
+   */
   apply: { max: 20, windowSeconds: 60 * 60 },
-  /** Signup floods are how fake-employer and CV-harvesting accounts arrive. */
-  signup: { max: 5, windowSeconds: 60 * 60 },
+  /**
+   * Signup floods are how fake-employer and CV-harvesting accounts arrive.
+   * This one has to stay address-keyed — there is no account to key on yet —
+   * so the ceiling is set high enough that a shared office or campus network
+   * signing up together is not mistaken for an attack.
+   */
+  signup: { max: 20, windowSeconds: 60 * 60 },
   /** Review brigading, in either direction, is the main threat to the ratings. */
-  review: { max: 5, windowSeconds: 60 * 60 },
-  /** The AI fit score costs real money per call. */
-  fitScore: { max: 60, windowSeconds: 60 * 60 },
+  review: { max: 10, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitBucket = keyof typeof RATE_LIMITS;
