@@ -4,7 +4,7 @@
 
 <h1 align="center">Perch</h1>
 
-<p align="center">A two-sided job board Where people find where they land next — and where teams find who lands with them.</p>
+<p align="center">A two-sided job board where people find where they land next — and where teams find who lands with them.</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-16-000000" alt="Next.js 16" />
@@ -28,7 +28,7 @@ every day.
 
 | Role | Signed in as | Try this |
 | --- | --- | --- |
-| **Job seeker** | Deniz Aksoy, junior frontend developer in Istanbul | Six applications on the dashboard, each at a different stage, with the employer's messages · a 100% profile with CV, work authorisation and preferences · saved jobs and a sponsorship alert · `/jobs` with visa sponsorship filtered on, then an application to a Tidewater Studio role with a screening question |
+| **Job seeker** | Deniz Aksoy, junior frontend developer in Istanbul | Six applications on the dashboard, from just submitted to an offer, with the employer's messages · a complete profile with CV, skills and job preferences · saved jobs and a job alert · an application to Tidewater's *Full-Stack Engineer (Node.js)* or *Junior Product Designer*, which ask the recruiter's own questions |
 | **Recruiter** | Selin Arslan, owner of Tidewater Studio (verified) | The pipeline for *Frontend Developer (React)*: move a candidate, rate them, leave an internal note, download a CV · post a job or import a CSV · per-job analytics · the team page |
 
 Demo accounts can do nearly everything a real one can. They cannot change
@@ -51,25 +51,26 @@ site to every visitor. The admin console is shown in screenshots instead.
 
 ## Why Perch
 
-International candidates cannot tell, from a job post, whether an employer will
-actually sponsor a visa or help them relocate. They spend evenings on
-applications that were never eligible, and they find out weeks later — if at
-all. Recruiters see the other half of the same problem: a pile of applicants
-who cannot legally take the role.
+Most job boards stop at the listing. A candidate applies and hears nothing; a
+recruiter gets a pile of applications and a spreadsheet to sort them in. Perch
+covers what happens after someone presses Apply, on both sides.
 
-Most boards treat sponsorship as prose buried in a description. Perch treats it
-as structured data on both sides of the market:
-
-- A job declares `visa_sponsorship` and `no_experience_required` as filterable
-  flags (migration `0010`).
-- A seeker declares whether they **need** sponsorship and what work
-  authorisation they hold (migration `0022`), using the same vocabulary.
-- Where both sides have answered, the job page says so plainly. Where either
-  has not, nothing is claimed — a missing answer is never treated as a "no".
-
-The same idea runs through experience level and job preferences: every
-dimension a recruiter can describe a job with now has a counterpart on the
-candidate, so the two can be compared without guesswork.
+- **Candidates know where they stand.** Every application shows its status and
+  a timeline of what the employer did, and each company's response rate is
+  public. Silence is visible.
+- **Fit is shown, not guessed.** Jobs and profiles use the same terms — skills,
+  experience, job type, work mode, location, work authorisation — so a match is
+  laid out plainly, with matched and missing skills side by side. A field left
+  blank is never counted against anyone.
+- **Recruiters get real hiring tools.** A stage pipeline with notes and
+  ratings, their own application questions and screening gates, team seats,
+  per-job analytics and bulk CSV import: the parts of an applicant-tracking
+  system a small team actually uses, in the same place the job is posted.
+- **Private by default.** A seeker's profile is visible to the employers they
+  apply to, and to recruiters only if they choose to be found. Exporting or
+  deleting your data (KVKK / GDPR) is a button, not an email.
+- **Built for two languages.** English and Turkish throughout, light and dark,
+  on phone and desktop.
 
 ## Brand
 
@@ -128,9 +129,8 @@ From `docs/design-spec.md`:
 
 ### For job seekers
 
-- Browse and filter by query, type, work mode, experience, salary floor,
-  language, and the two niche flags — no-experience-required and visa
-  sponsorship.
+- Browse and filter by keyword, job type, work mode, experience, salary
+  floor, posting language, entry-level roles and visa sponsorship.
 - Job detail with a full description, custom application questions, and a
   **pay-in-context** panel showing how the salary compares with the board's own
   median for that level.
@@ -302,7 +302,7 @@ under Git Bash.
 | `0007` | Admin console v2, reports, audit log |
 | `0008` | Restore the jobs insert policy |
 | `0009` | Company reviews and apply-method tracking |
-| `0010` | Niche flags (visa sponsorship, no experience) and fit-score cache |
+| `0010` | Entry-level and visa-sponsorship flags on jobs; fit-score cache |
 | `0011` | Per-job custom application questions |
 | `0012` | Content language on jobs and companies |
 | `0013` | Fit-score `updated_at` |
