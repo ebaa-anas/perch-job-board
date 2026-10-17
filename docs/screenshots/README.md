@@ -1,18 +1,18 @@
 # Screenshots
 
-The images the root README shows. Each `.svg` here is a placeholder until a
-real capture replaces it.
+The images the root README shows, captured from the seeded demo data at
+1600 × 1000 (1.5× pixel density) in the light theme, with the demo banner
+dismissed.
 
-| File | Capture |
+| File | Shows |
 | --- | --- |
-| `seeker-dashboard.svg` | `/dashboard`, signed in as the demo job seeker |
-| `recruiter-pipeline.svg` | `/dashboard/jobs/<id>/applicants` for *Frontend Developer (React)*, as the demo recruiter |
-| `admin-overview.svg` | `/admin` |
-| `admin-moderation.svg` | `/admin/reports` or `/admin/companies` |
+| `seeker-dashboard.png` | `/dashboard` as the demo job seeker |
+| `recruiter-pipeline.png` | The applicants for *Frontend Developer (React)* as the demo recruiter, with one applicant open |
+| `admin-overview.png` | `/admin` |
+| `admin-moderation.png` | `/admin/companies/<id>` for Tidewater Studio |
 
 The admin console is shown only here, never as a demo login: a shared admin
 account would hand moderation of the live site to every visitor.
 
-Capture at 1600 × 1000 in the light theme, with the demo banner dismissed.
-Saving a capture as `.png` instead of overwriting the `.svg` is fine — update
-the matching `<img>` path in the root `README.md`.
+When the UI changes, recapture at the same size and keep the file names, so the
+README needs no edit.

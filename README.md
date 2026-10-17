@@ -39,12 +39,12 @@ There is no demo admin: a shared admin login would hand moderation of the live
 site to every visitor. The admin console is shown in screenshots instead.
 
 <p align="center">
-  <img src="docs/screenshots/seeker-dashboard.svg" width="49%" alt="Job seeker dashboard" />
-  <img src="docs/screenshots/recruiter-pipeline.svg" width="49%" alt="Recruiter applicant pipeline" />
+  <img src="docs/screenshots/seeker-dashboard.png" width="49%" alt="Job seeker dashboard: every application with the employer's latest status" />
+  <img src="docs/screenshots/recruiter-pipeline.png" width="49%" alt="Recruiter reviewing an applicant: skills match, note, answers to the job's questions and CV" />
 </p>
 <p align="center">
-  <img src="docs/screenshots/admin-overview.svg" width="49%" alt="Admin console overview" />
-  <img src="docs/screenshots/admin-moderation.svg" width="49%" alt="Admin console moderation queue" />
+  <img src="docs/screenshots/admin-overview.png" width="49%" alt="Admin console overview: totals, 30-day trends and top companies" />
+  <img src="docs/screenshots/admin-moderation.png" width="49%" alt="Admin console: a company's moderation page with suspend, email, reviews, reports and jobs" />
 </p>
 
 ---
