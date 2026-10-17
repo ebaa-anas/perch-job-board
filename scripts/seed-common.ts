@@ -6,19 +6,10 @@ import type { Database } from "../src/lib/supabase/database.types";
 config({ path: ".env.local" });
 
 /**
- * Shared setup for the seed scripts.
- *
- * Every account the seed creates lives on one domain. That single fact is what
- * makes the data removable later: `seed:clear` deletes exactly the accounts on
- * this domain and lets the schema's cascades take their companies, jobs,
- * applications and saved jobs with them. Nothing has to be tracked separately,
- * and nothing outside the domain can be caught by accident.
+ * Shared setup for the seed scripts: the service-role client and the row
+ * counts they print. What gets seeded and cleared lives in
+ * `src/features/demo/reset.ts`, shared with the daily reset cron.
  */
-export const SEED_DOMAIN = "seed.perch.test";
-
-export function isSeedEmail(email: string | undefined | null): boolean {
-  return (email ?? "").toLowerCase().endsWith(`@${SEED_DOMAIN}`);
-}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -33,13 +24,6 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 export const db = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
-
-export function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 /** Tables the scripts report on, in a stable order. */
 export const REPORTED_TABLES = [
@@ -74,19 +58,6 @@ export async function countRows(): Promise<Record<string, number>> {
     counts[table] = error ? -1 : (count ?? 0);
   }
   return counts;
-}
-
-/** `auth.users` is paginated; walk it rather than assuming one page. */
-export async function listAllUsers(): Promise<{ id: string; email: string }[]> {
-  const users: { id: string; email: string }[] = [];
-  for (let page = 1; page <= 100; page += 1) {
-    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) throw new Error(`listUsers: ${error.message}`);
-    const batch = data?.users ?? [];
-    for (const u of batch) users.push({ id: u.id, email: u.email ?? "" });
-    if (batch.length < 200) break;
-  }
-  return users;
 }
 
 export function printCounts(title: string, counts: Record<string, number>): void {

@@ -11,6 +11,8 @@ import { sendTeamInviteEmail } from "@/lib/email";
 import { createNotification } from "@/features/notifications/notify";
 import { getOwnMembership } from "@/features/team/data";
 import { ASSIGNABLE_TEAM_ROLES, can } from "@/features/team/roles";
+import { isDemoUser } from "@/features/demo/demo-rules";
+import { demoBlocked } from "@/features/demo/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -48,6 +50,9 @@ export async function inviteTeamMember(input: {
   role: "admin" | "recruiter";
 }): Promise<Result> {
   const profile = await requireRole("recruiter");
+  // An invite exists to send an email to an address the visitor types — from
+  // a login the whole internet shares, that is a spam relay.
+  if (isDemoUser(profile.email)) return { ok: false, error: await demoBlocked("invite") };
   const manager = await requireManager();
   if (!manager.ok) return manager;
 

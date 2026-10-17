@@ -49,4 +49,10 @@ describe("isListedAdminEmail", () => {
   it("tolerates a null email column without matching it", () => {
     expect(isListedAdminEmail([{ email: null }], "owner@perch.test")).toBe(false);
   });
+
+  it("never makes a demo account an admin, even when it is listed", () => {
+    const listed = [{ email: "demo-recruiter@seed.perch.test" }, { email: "nadia@seed.perch.test" }];
+    expect(isListedAdminEmail(listed, "demo-recruiter@seed.perch.test")).toBe(false);
+    expect(isListedAdminEmail(listed, "NADIA@seed.perch.test")).toBe(false);
+  });
 });

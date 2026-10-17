@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "seed": "tsx scripts/seed.ts",
     "seed:clear": "tsx scripts/seed-clear.ts",
+    "demo:reset": "npm run seed:clear && npm run seed",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked > src/lib/supabase/database.types.ts",
     "test:integration": "vitest run --project integration --no-file-parallelism",

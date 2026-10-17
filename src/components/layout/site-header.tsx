@@ -123,7 +123,12 @@ export function SiteHeader({
             </Link>
           )}
 
-          <LocaleToggle />
+          {/* Signed in, a phone bar already carries saved, alerts, account and
+              the menu; the language switch moves into the menu so a 360px
+              screen does not scroll sideways. */}
+          <div className={cn("items-center", nav.length > 1 ? "hidden sm:flex" : "flex")}>
+            <LocaleToggle />
+          </div>
           <ThemeToggle />
 
           {isAuthed ? (
@@ -184,7 +189,10 @@ export function SiteHeader({
               </li>
             ))}
           </ul>
-
+          <div className="mt-3 flex items-center justify-between border-t border-border px-3 pt-3">
+            <span className="text-sm font-medium text-muted-foreground">{t.nav.language}</span>
+            <LocaleToggle />
+          </div>
         </nav>
       )}
     </header>

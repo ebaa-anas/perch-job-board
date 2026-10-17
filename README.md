@@ -16,6 +16,39 @@
 
 ---
 
+## Live demo
+
+**[Open the live demo →](https://your-deployment.vercel.app/login)** &nbsp;·&nbsp; **[Demo video](https://your-video-link)**
+
+<!-- Replace both links above once the deployment and the video are live. -->
+
+No sign-up and nothing to type: on the sign-in page, under **Try the demo**,
+pick a role. Each is a shared, ready-made account, and all demo data resets
+every day.
+
+| Role | Signed in as | Try this |
+| --- | --- | --- |
+| **Job seeker** | Deniz Aksoy, junior frontend developer in Istanbul | Six applications on the dashboard, each at a different stage, with the employer's messages · a 100% profile with CV, work authorisation and preferences · saved jobs and a sponsorship alert · `/jobs` with visa sponsorship filtered on, then an application to a Tidewater Studio role with a screening question |
+| **Recruiter** | Selin Arslan, owner of Tidewater Studio (verified) | The pipeline for *Frontend Developer (React)*: move a candidate, rate them, leave an internal note, download a CV · post a job or import a CSV · per-job analytics · the team page |
+
+Demo accounts can do nearly everything a real one can. They cannot change
+their password or email, delete themselves, send email or invitations, or
+apply to and review real companies.
+
+There is no demo admin: a shared admin login would hand moderation of the live
+site to every visitor. The admin console is shown in screenshots instead.
+
+<p align="center">
+  <img src="docs/screenshots/seeker-dashboard.svg" width="49%" alt="Job seeker dashboard" />
+  <img src="docs/screenshots/recruiter-pipeline.svg" width="49%" alt="Recruiter applicant pipeline" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/admin-overview.svg" width="49%" alt="Admin console overview" />
+  <img src="docs/screenshots/admin-moderation.svg" width="49%" alt="Admin console moderation queue" />
+</p>
+
+---
+
 ## Why Perch
 
 International candidates cannot tell, from a job post, whether an employer will
@@ -151,8 +184,8 @@ detail views; and an append-only audit log.
 English and Turkish, light and dark themes, SEO metadata with `sitemap.xml`,
 `robots.txt` and schema.org `JobPosting` structured data, baseline security
 headers on every route, Postgres-backed rate limiting, row-level security on
-all 20 tables, seeker-profile privacy (`0021`), and a health endpoint plus two
-Vercel cron jobs.
+all 20 tables, seeker-profile privacy (`0021`), a health endpoint plus three
+Vercel cron jobs, and an optional portfolio demo mode.
 
 ## Product tour
 
@@ -179,6 +212,7 @@ Vercel cron jobs.
 | API | `GET /api/jobs`, `GET /api/jobs/[slug]` | Public JSON |
 | | `GET /api/health` | Weekly keep-alive cron |
 | | `GET /api/alerts/run` | Daily alert digest cron (`CRON_SECRET`) |
+| | `GET /api/cron/demo-reset` | Daily demo reset, demo mode only (`CRON_SECRET`) |
 
 ## Tech stack and architecture
 
@@ -208,6 +242,13 @@ to two fixed hosts; rate limits are enforced in Postgres rather than in process
 memory. Structured data embedded in a `<script>` tag is escaped so
 recruiter-authored job text cannot break out of it.
 
+Demo mode is built on the assumption that everyone on the internet shares the
+demo logins. Their passwords never leave the server; the actions that would
+let one visitor lock out the next, or reach a real person, are refused on the
+server; a database trigger (`0023`) keeps their email addresses fixed even
+against direct Auth API calls; and demo and real accounts cannot apply to or
+review each other's companies.
+
 ## Getting started
 
 **Prerequisites:** Node 20+, npm, a Supabase project, and the Supabase CLI for
@@ -222,6 +263,10 @@ npm run db:types               # regenerate database types
 npm run seed                   # demo companies, jobs and accounts
 npm run dev                    # http://localhost:3000
 ```
+
+`npm run seed:clear` removes every seeded account and everything attached to
+it; `npm run demo:reset` does both, which is what the daily cron runs in demo
+mode.
 
 On Windows, run the Supabase CLI from PowerShell — the Go binary misbehaves
 under Git Bash.
@@ -238,8 +283,11 @@ under Git Bash.
 | `RESEND_API_KEY` | Optional | Transactional email. Without it, mail is logged and skipped |
 | `EMAIL_FROM` | Optional | Sender identity for Resend |
 | `ANTHROPIC_API_KEY` | Optional | AI fit score. Without it, seekers simply do not see a score |
-| `CRON_SECRET` | Production | Shared secret for the alert cron. Without it the endpoint refuses to run |
-| `SEED_ADMIN_EMAIL` | Optional | Address added to `admin_emails` by the seed script |
+| `CRON_SECRET` | Production | Shared secret for the alert and demo-reset crons. Without it both refuse to run |
+| `SEED_ADMIN_EMAIL` | Optional | Address added to `admin_emails` by the seed script. Never a demo address |
+| `NEXT_PUBLIC_DEMO_MODE` | Optional | `true` turns on one-click demo sign-in, the demo banner and the daily reset. Inlined at build time |
+| `DEMO_SEEKER_PASSWORD` | Demo mode | Password for the shared demo seeker. Server-only, read by the sign-in action |
+| `DEMO_RECRUITER_PASSWORD` | Demo mode | Password for the shared demo recruiter. Server-only, read by the sign-in action |
 
 ## Database and migrations
 
@@ -267,6 +315,7 @@ under Git Bash.
 | `0020` | Screening gates on application questions |
 | `0021` | Featured listings, verified employers, opt-in sourcing — and the fix that replaced the world-readable `seeker_profiles` policy |
 | `0022` | Seeker matching fields: work authorisation, experience, preferences |
+| `0023` | Demo-account guards: seed-domain emails are frozen and can never be admins |
 
 ## Testing
 
@@ -285,7 +334,7 @@ scratch project, not production.
 
 ## Deployment
 
-Vercel, auto-deploying from `main`, with Supabase as the backend and two cron
+Vercel, auto-deploying from `main`, with Supabase as the backend and three cron
 jobs declared in `vercel.json`. Full steps in
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 

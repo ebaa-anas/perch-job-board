@@ -111,7 +111,7 @@ export default async function HomePage() {
             <ArrowRight className="size-4" />
           </Link>
         </div>
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {latest.map((job) => (
             <li key={job.id}>
               <JobCard job={job} />

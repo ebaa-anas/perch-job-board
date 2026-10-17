@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SeekerStatus } from "@/features/applications/pipeline";
+import { isDemoUser } from "@/features/demo/demo-rules";
 
 /**
  * Minimal transactional email via the Resend REST API — no SDK dependency.
@@ -20,6 +21,12 @@ async function send(params: {
   html: string;
   text: string;
 }): Promise<SendResult> {
+  // Demo and seeded accounts live on a reserved `.test` domain: nothing sent
+  // there can arrive, and every bounce counts against the sender's reputation.
+  if (isDemoUser(params.to)) {
+    console.info(`[email] demo address — skipped "${params.subject}"`);
+    return { ok: false, skipped: true };
+  }
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     console.info(`[email] RESEND_API_KEY unset — skipped "${params.subject}" to ${params.to}`);

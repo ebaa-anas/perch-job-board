@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimitRequest } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getProfile } from "@/features/auth/session";
+import { getProfile, getUser } from "@/features/auth/session";
 import { isAdminEmail } from "@/features/auth/admin-emails";
 import { AUTH_ROLES, type AuthRole } from "@/features/auth/schema";
 import { safeRelativePath } from "@/features/auth/redirect";
+import { isDemoUser } from "@/features/demo/demo-rules";
+import { demoBlocked } from "@/features/demo/server";
 
 /**
  * Server Actions for the auth flow. Everything a form or route needs to sign a
@@ -107,6 +109,11 @@ export async function signUp(input: {
   if (!input.email || !input.password) {
     return { error: "Email and password are required." };
   }
+  // The seed domain is wiped every night and its accounts are treated as
+  // shared demo logins everywhere; a real person must never land on it.
+  if (isDemoUser(input.email)) {
+    return { error: await demoBlocked("reservedDomain") };
+  }
   if (!(await rateLimitRequest("signup"))) {
     return { error: "Too many sign-up attempts from this connection. Try again later." };
   }
@@ -166,8 +173,12 @@ export async function signInWithGoogle(
 }
 
 export async function signOut(): Promise<void> {
+  const user = await getUser();
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // The default scope is global: it revokes every session the account has.
+  // A demo login is shared by everyone trying the demo at that moment, so for
+  // one only this browser's session ends.
+  await supabase.auth.signOut({ scope: isDemoUser(user?.email) ? "local" : "global" });
   redirect("/");
 }
 
@@ -198,7 +209,10 @@ export async function completeOnboarding(
 
 export async function requestPasswordReset(
   email: string,
-): Promise<{ ok: true }> {
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Saying so reveals nothing: the demo domain is public, and a reset mail to
+  // a `.test` address could only bounce.
+  if (isDemoUser(email)) return { ok: false, error: await demoBlocked("reset") };
   try {
     const supabase = await createClient();
     // Land on the callback so the PKCE code is exchanged for a (recovery)
@@ -215,6 +229,9 @@ export async function requestPasswordReset(
 export async function updatePassword(
   password: string,
 ): Promise<{ error: string } | void> {
+  const user = await getUser();
+  if (isDemoUser(user?.email)) return { error: await demoBlocked("password") };
+
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: friendlyAuthError(error.message) };

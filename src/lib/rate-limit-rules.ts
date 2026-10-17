@@ -26,6 +26,13 @@ export const RATE_LIMITS = {
   signup: { max: 20, windowSeconds: 60 * 60 },
   /** Review brigading, in either direction, is the main threat to the ratings. */
   review: { max: 10, windowSeconds: 60 * 60 },
+  /**
+   * One-click demo sign-in. Address-keyed because the visitor has no account
+   * of their own. A person exploring both roles needs a handful; the ceiling
+   * is there because every sign-in mints a session on a shared account, and a
+   * script looping on it would exhaust Supabase's own auth limit for everyone.
+   */
+  demo: { max: 20, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitBucket = keyof typeof RATE_LIMITS;

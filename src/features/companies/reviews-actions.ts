@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/features/auth/session";
 import { rateLimitSubject } from "@/lib/rate-limit";
 import { reviewSchema, type ReviewValues } from "@/features/companies/schema";
+import { crossesDemoBoundary, isDemoMode, isDemoUser } from "@/features/demo/demo-rules";
+import { companyOwnerEmail, demoBlocked } from "@/features/demo/server";
 
 type Result = { ok: boolean; error?: string };
 
@@ -32,6 +34,15 @@ export async function upsertReview(
   if (!company) return { ok: false, error: "Company not found." };
   if (company.owner_id === profile.id) {
     return { ok: false, error: "You can't review your own company." };
+  }
+  // Reviews go live immediately and in public. From a login anyone can borrow
+  // they would be anonymous posts about real employers, so demo accounts stay
+  // on demo companies — and real people do not review the fictional ones.
+  if (isDemoMode() && crossesDemoBoundary(profile.email, await companyOwnerEmail(companyId))) {
+    return {
+      ok: false,
+      error: await demoBlocked(isDemoUser(profile.email) ? "demoOnly" : "demoListing"),
+    };
   }
 
   const { error } = await supabase.from("company_reviews").upsert(

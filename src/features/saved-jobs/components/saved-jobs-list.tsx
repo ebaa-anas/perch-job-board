@@ -15,7 +15,7 @@ export function SavedJobsList({ jobs }: { jobs: Job[] }) {
 
   if (!hydrated) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
           <Skeleton key={index} className="h-52 rounded-xl" />
         ))}
@@ -54,7 +54,7 @@ export function SavedJobsList({ jobs }: { jobs: Job[] }) {
           Clear all
         </Button>
       </div>
-      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {savedJobs.map((job) => (
           <li key={job.id} className="animate-fade-up">
             <JobCard job={job} />

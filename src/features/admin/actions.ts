@@ -9,6 +9,8 @@ import { getUser, requireRole } from "@/features/auth/session";
 import { slugify } from "@/lib/slug";
 import { SEED_JOBS } from "@/features/jobs/seed";
 import { sendAdminMessageEmail } from "@/lib/email";
+import { isDemoUser } from "@/features/demo/demo-rules";
+import { demoBlocked } from "@/features/demo/server";
 
 type Result = { ok: boolean; error?: string; message?: string };
 
@@ -278,7 +280,10 @@ export async function removeAdminEmail(rawEmail: string): Promise<Result> {
 }
 
 export async function updateOwnPassword(password: string): Promise<Result> {
-  await requireAdmin();
+  const actor = await requireAdmin();
+  // Unreachable while demo accounts cannot be admins, and kept so that it
+  // stays true if that ever changes.
+  if (isDemoUser(actor.email)) return { ok: false, error: await demoBlocked("password") };
   if (password.length < 8) {
     return { ok: false, error: "Use at least 8 characters." };
   }

@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/health", "schedule": "0 6 * * 1" },
-    { "path": "/api/alerts/run", "schedule": "0 7 * * *" }
+    { "path": "/api/alerts/run", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/demo-reset", "schedule": "0 3 * * *" }
   ]
 }

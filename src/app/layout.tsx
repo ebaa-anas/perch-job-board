@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import {
   Bricolage_Grotesque,
   Geist_Mono,
@@ -15,6 +16,8 @@ import { getUnreadNotificationCount } from "@/features/notifications/data";
 import { listSavedJobIds } from "@/features/saved-jobs/actions";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
 import { getLocale } from "@/lib/i18n/locale";
+import { DemoBanner } from "@/features/demo/components/demo-banner";
+import { DEMO_BANNER_COOKIE, isDemoMode, isDemoUser } from "@/features/demo/demo-rules";
 
 /**
  * Typography.
@@ -128,10 +131,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [profile, locale] = await Promise.all([getProfile(), getLocale()]);
   const isSeeker = profile?.role === "seeker";
   const canSave = !profile || profile.role === "seeker";
-  const [savedIds, unreadNotifications] = await Promise.all([
+  const [savedIds, unreadNotifications, cookieStore] = await Promise.all([
     isSeeker ? listSavedJobIds() : Promise.resolve([]),
     profile ? getUnreadNotificationCount() : Promise.resolve(0),
+    cookies(),
   ]);
+  const showDemoBanner =
+    isDemoMode() &&
+    isDemoUser(profile?.email) &&
+    cookieStore.get(DEMO_BANNER_COOKIE)?.value !== "dismissed";
 
   return (
     <html
@@ -150,6 +158,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               serverIds={savedIds}
               canSave={canSave}
             >
+              {showDemoBanner ? <DemoBanner /> : null}
               <SiteHeader
                 profile={profile}
                 unreadNotifications={unreadNotifications}

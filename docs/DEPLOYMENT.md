@@ -25,3 +25,28 @@
 ## 4. Every later deploy
 
 `git push` → Vercel auto-builds. Schema changes: `npm run db:push` first.
+
+## 5. Portfolio demo mode (optional)
+
+Adds one-click "Try the demo" sign-in on `/login`, a banner on demo accounts,
+and a daily reset of the demo data. Off unless switched on.
+
+1. Apply migration `0023` with `npm run db:push`. It stops the shared demo
+   logins from changing their email address or ever becoming admins.
+2. In Vercel → Settings → Environment Variables (Production), add:
+   - `NEXT_PUBLIC_DEMO_MODE` = `true`. Inlined at build time, so redeploy
+     after changing it.
+   - `DEMO_SEEKER_PASSWORD` and `DEMO_RECRUITER_PASSWORD`: long random values.
+     Nobody types them; the sign-in action reads them on the server. Never
+     give them a `NEXT_PUBLIC_` prefix.
+   - `CRON_SECRET`: a long random value, if it is not set already.
+3. Redeploy, then run `npm run demo:reset` once against the same Supabase
+   project, or wait for the first scheduled reset (`/api/cron/demo-reset`,
+   daily around 03:00 UTC; Hobby crons fire within the hour).
+
+To generate a value:
+`node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"`.
+
+If the passwords in your `.env.local` differ from the ones in Vercel, nothing
+breaks: the first demo sign-in on the live site resets the account to the
+password the deployment has.

@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfile, requireUser } from "@/features/auth/session";
+import { isDemoUser } from "@/features/demo/demo-rules";
+import { demoBlocked } from "@/features/demo/server";
 
 /**
  * Subject-access and erasure, self-service.
@@ -113,6 +115,12 @@ export async function deleteMyAccount(
   await requireUser("/profile");
   const profile = await getProfile();
   if (!profile) return { ok: false, error: "Sign in again to delete your account." };
+
+  // A shared demo login deleted by one visitor would be gone for everyone
+  // until the nightly reset. Export stays available; erasure does not.
+  if (isDemoUser(profile.email)) {
+    return { ok: false, error: await demoBlocked("deleteAccount") };
+  }
 
   if (confirmation.trim().toLowerCase() !== "delete") {
     return { ok: false, error: 'Type "delete" to confirm.' };

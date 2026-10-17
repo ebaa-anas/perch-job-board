@@ -3,6 +3,8 @@
  * a database, the same split as `redirect.ts`.
  */
 
+import { isDemoUser } from "@/features/demo/demo-rules";
+
 /**
  * Case-insensitive membership test against the `admin_emails` rows.
  *
@@ -19,5 +21,9 @@ export function isListedAdminEmail(
   if (!email) return false;
   const needle = email.trim().toLowerCase();
   if (!needle) return false;
+  // A demo login is shared with the whole internet. Even a row put into
+  // `admin_emails` by hand must not turn one into an admin; migration 0023
+  // refuses such rows in the database as well.
+  if (isDemoUser(needle)) return false;
   return rows.some((row) => (row.email ?? "").trim().toLowerCase() === needle);
 }

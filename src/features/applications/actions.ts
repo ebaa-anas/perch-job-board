@@ -12,6 +12,8 @@ import { buildAnswersSchema } from "@/features/applications/answers";
 import { findKnockout } from "@/features/applications/knockout";
 import { getJobQuestions } from "@/features/jobs/data";
 import type { JobApplicationQuestion } from "@/features/jobs/types";
+import { crossesDemoBoundary, isDemoMode, isDemoUser } from "@/features/demo/demo-rules";
+import { companyOwnerEmail, demoBlocked } from "@/features/demo/server";
 import type { Json } from "@/lib/supabase/database.types";
 
 type ApplyResult =
@@ -87,6 +89,16 @@ export async function applyToJob(input: {
     return { ok: false, error: "This job isn't accepting applications." };
   }
 
+  // Everyone trying the demo shares one recruiter login, so whatever reaches
+  // a demo company is public: a real CV must not land there, and a demo
+  // visitor's application must not land in a real recruiter's pipeline.
+  if (isDemoMode() && crossesDemoBoundary(profile.email, await companyOwnerEmail(job.company_id))) {
+    return {
+      ok: false,
+      error: await demoBlocked(isDemoUser(profile.email) ? "demoOnly" : "demoListing"),
+    };
+  }
+
   const questions = await getJobQuestions(job.id);
   const answersResult = buildAnswersSchema(questions).safeParse(input.answers ?? {});
   if (!answersResult.success) {
@@ -129,14 +141,17 @@ export async function applyToJob(input: {
     return { ok: false, error: error.message };
   }
 
-  void notifyRecruiter({
-    ownerCompanyId: job.company_id,
-    jobId: job.id,
-    jobTitle: job.title,
-    applicantName: profile.fullName ?? profile.email,
-    applicantHeadline: seeker.headline ?? null,
-    note: parsed.data.note ?? null,
-  });
+  // Demo visitors never cause real mail, whoever the recipient would be.
+  if (!isDemoUser(profile.email)) {
+    void notifyRecruiter({
+      ownerCompanyId: job.company_id,
+      jobId: job.id,
+      jobTitle: job.title,
+      applicantName: profile.fullName ?? profile.email,
+      applicantHeadline: seeker.headline ?? null,
+      note: parsed.data.note ?? null,
+    });
+  }
 
   revalidatePath("/dashboard");
   revalidatePath(`/jobs`);

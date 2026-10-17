@@ -20,6 +20,7 @@ import { Field, FormError } from "@/features/auth/components/auth-ui";
 /** Step 1 — no recovery session: ask for the account email. */
 export function RequestResetForm() {
   const [sent, setSent] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -31,7 +32,14 @@ export function RequestResetForm() {
   });
 
   const onSubmit = handleSubmit(async ({ email }) => {
-    await requestPasswordReset(email);
+    setFormError(null);
+    const result = await requestPasswordReset(email);
+    // Only a demo address is refused; every real one gets the same "sent"
+    // screen whether or not it has an account.
+    if (!result.ok) {
+      setFormError(result.error);
+      return;
+    }
     setSent(true);
   });
 
@@ -57,6 +65,7 @@ export function RequestResetForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      <FormError message={formError} />
       <Field label="Email" htmlFor="email" error={errors.email?.message}>
         <Input
           id="email"

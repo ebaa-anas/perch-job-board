@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/features/auth/session";
 import { sendApplicationStatusEmail } from "@/lib/email";
 import { createNotification } from "@/features/notifications/notify";
+import { isDemoUser } from "@/features/demo/demo-rules";
 import {
   APPLICATION_STAGES,
   canTransition,
@@ -171,7 +172,9 @@ export async function setApplicationStage(input: {
     url: "/dashboard",
   });
 
-  if (notify) {
+  // The in-app notification above still goes out; only real mail is held back
+  // when the person moving the application is a demo visitor.
+  if (notify && !isDemoUser(profile.email)) {
     void notifySeeker({
       seekerId: context.seekerId,
       jobTitle: context.jobTitle,
