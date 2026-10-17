@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { canTransition, type ApplicationStage } from "@/features/applications/pipeline";
+import { buildAnswersSchema } from "@/features/applications/answers";
+import { findKnockout } from "@/features/applications/knockout";
+import { applicationQuestionsSchema } from "@/features/jobs/schema";
+import type { JobApplicationQuestion } from "@/features/jobs/types";
 import { computeCompleteness } from "@/features/profiles/completeness";
 import { DEMO_ACCOUNTS, isDemoUser } from "@/features/demo/demo-rules";
 import {
@@ -17,6 +21,18 @@ const accountKeys = new Set(SEED_ACCOUNTS.map((account) => account.key));
 const jobByKey = new Map(SEED_JOB_PLAN.map((job) => [job.key, job]));
 const currentStage = (app: (typeof SEED_APPLICATIONS)[number]): ApplicationStage =>
   app.steps.at(-1)?.stage ?? "applied";
+
+/** A job's seeded form as the app reads it back, with stand-in ids. */
+function formOf(jobKey: string): JobApplicationQuestion[] {
+  return (jobByKey.get(jobKey)?.questions ?? []).map((question, index) => ({
+    id: `q${index}`,
+    label: question.label,
+    type: question.type,
+    required: question.required,
+    options: question.options ?? [],
+    knockoutAnswer: question.knockoutAnswer,
+  }));
+}
 
 describe("accounts", () => {
   it("are all on the demo domain, so the reset can find every one", () => {
@@ -126,16 +142,52 @@ describe("applications", () => {
     }
   });
 
-  it("pass their own job's screening gates", () => {
+  it("answer their job's form the way the apply action would accept", () => {
     for (const app of SEED_APPLICATIONS) {
-      const questions = jobByKey.get(app.job)?.questions ?? [];
-      questions.forEach((question, index) => {
-        if (!question.knockoutAnswer) return;
-        const answer = app.answers[index];
-        const normalised = typeof answer === "boolean" ? (answer ? "yes" : "no") : String(answer);
-        expect(normalised, `${app.seeker} → ${question.label}`).toBe(question.knockoutAnswer);
-      });
+      const form = formOf(app.job);
+      const label = `${app.seeker} → ${app.job}`;
+      expect(app.answers.length, label).toBeLessThanOrEqual(form.length);
+
+      const answers = Object.fromEntries(
+        form.flatMap((question, index) =>
+          app.answers[index] === undefined ? [] : [[question.id, app.answers[index]]],
+        ),
+      );
+      expect(buildAnswersSchema(form).safeParse(answers).success, label).toBe(true);
+      expect(findKnockout(form, answers), label).toBeNull();
     }
+  });
+});
+
+describe("application forms", () => {
+  it("are forms a recruiter could build in the job editor", () => {
+    for (const job of SEED_JOB_PLAN) {
+      const parsed = applicationQuestionsSchema.safeParse(
+        job.questions.map((question) => ({
+          label: question.label,
+          type: question.type,
+          required: question.required,
+          options: question.options ?? [],
+          knockoutAnswer: question.knockoutAnswer ?? "",
+        })),
+      );
+      expect(parsed.success, job.slug).toBe(true);
+    }
+  });
+
+  it("meet the demo seeker on jobs it can still apply to, one with a screening gate", () => {
+    const applied = new Set(
+      SEED_APPLICATIONS.filter((app) => app.seeker === "demo-seeker").map((app) => app.job),
+    );
+    const open = SEED_JOB_PLAN.filter(
+      (job) => job.status === "published" && job.questions.length > 0 && !applied.has(job.key),
+    );
+    expect(open.length).toBeGreaterThanOrEqual(3);
+    expect(
+      open.some(
+        (job) => job.company === "tidewater" && job.questions.some((q) => q.knockoutAnswer),
+      ),
+    ).toBe(true);
   });
 });
 

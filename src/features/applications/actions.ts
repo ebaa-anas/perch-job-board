@@ -8,10 +8,9 @@ import { requireRole } from "@/features/auth/session";
 import { sendNewApplicantEmail } from "@/lib/email";
 import { rateLimitSubject } from "@/lib/rate-limit";
 import { applySchema } from "@/features/applications/schema";
-import { buildAnswersSchema } from "@/features/applications/answers";
+import { buildAnswersSchema, snapshotAnswers } from "@/features/applications/answers";
 import { findKnockout } from "@/features/applications/knockout";
 import { getJobQuestions } from "@/features/jobs/data";
-import type { JobApplicationQuestion } from "@/features/jobs/types";
 import { crossesDemoBoundary, isDemoMode, isDemoUser } from "@/features/demo/demo-rules";
 import { companyOwnerEmail, demoBlocked } from "@/features/demo/server";
 import type { Json } from "@/lib/supabase/database.types";
@@ -19,25 +18,6 @@ import type { Json } from "@/lib/supabase/database.types";
 type ApplyResult =
   | { ok: true; alreadyApplied?: boolean }
   | { ok: false; error: string; needsProfile?: boolean; fieldErrors?: Record<string, string> };
-
-interface CustomAnswerSnapshot {
-  questionId: string;
-  label: string;
-  type: JobApplicationQuestion["type"];
-  answer: string | boolean;
-}
-
-function snapshotAnswers(
-  questions: JobApplicationQuestion[],
-  answers: Record<string, unknown>,
-): CustomAnswerSnapshot[] {
-  return questions.map((q) => ({
-    questionId: q.id,
-    label: q.label,
-    type: q.type,
-    answer: q.type === "yes_no" ? Boolean(answers[q.id]) : String(answers[q.id] ?? ""),
-  }));
-}
 
 /** Every application is submitted on Perch — there is no external apply link. */
 export async function applyToJob(input: {

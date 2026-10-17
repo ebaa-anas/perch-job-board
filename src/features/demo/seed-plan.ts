@@ -13,7 +13,12 @@
 import { SEED_JOBS } from "@/features/jobs/seed";
 import { slugify } from "@/lib/slug";
 import type { ApplicationStage } from "@/features/applications/pipeline";
-import type { ExperienceLevel, JobType, WorkMode } from "@/features/jobs/types";
+import type {
+  ApplicationQuestionType,
+  ExperienceLevel,
+  JobType,
+  WorkMode,
+} from "@/features/jobs/types";
 import {
   DEMO_ACCOUNTS,
   DEMO_EMAIL_DOMAIN,
@@ -63,8 +68,11 @@ export interface SeedCompany {
 
 export interface SeedQuestion {
   label: string;
-  type: "short_text" | "yes_no";
+  type: ApplicationQuestionType;
   required: boolean;
+  /** Choices for `multiple_choice`; ignored otherwise. */
+  options?: string[];
+  /** The one answer that lets an application through, or null for no gate. */
   knockoutAnswer: string | null;
 }
 
@@ -395,6 +403,52 @@ export function castJobKey(index: number): string {
 const castCompanyKeys = SEED_COMPANIES.filter((c) => c.key !== "tidewater").map((c) => c.key);
 
 /**
+ * Recruiter-written application forms on some of the cast companies' jobs,
+ * keyed by job title, so a visitor meets them while browsing the board and
+ * not only on Tidewater's listings.
+ */
+const CAST_QUESTIONS: Record<string, SeedQuestion[]> = {
+  "Product Designer": [
+    { label: "Link to your portfolio", type: "short_text", required: true, knockoutAnswer: null },
+    {
+      label: "Can you work from our London office three days a week?",
+      type: "yes_no",
+      required: true,
+      knockoutAnswer: "yes",
+    },
+  ],
+  "Design Engineer": [
+    {
+      label: "Link to a component or design system you have built",
+      type: "short_text",
+      required: true,
+      knockoutAnswer: null,
+    },
+    {
+      label: "Where do you start a new interface?",
+      type: "multiple_choice",
+      required: false,
+      options: ["In code", "In Figma", "On paper"],
+      knockoutAnswer: null,
+    },
+  ],
+  "Full-Stack Engineer": [
+    {
+      label: "Have you built anything that moves money?",
+      type: "yes_no",
+      required: false,
+      knockoutAnswer: null,
+    },
+    {
+      label: "Tell us about the system you know best",
+      type: "long_text",
+      required: false,
+      knockoutAnswer: null,
+    },
+  ],
+};
+
+/**
  * The bundled jobs, spread round-robin over the cast companies — using only
  * the jobs whose own company name matched would leave three listings, which
  * is not a demo of anything.
@@ -424,7 +478,7 @@ const CAST_JOBS: SeedJob[] = SEED_JOBS.map((job, index) => ({
     Math.round((Date.now() - new Date(job.postedAt).getTime()) / 86_400_000),
   ),
   featuredForDays: null,
-  questions: [],
+  questions: CAST_QUESTIONS[job.title] ?? [],
 }));
 
 const TIDEWATER_JOBS: SeedJob[] = [
@@ -526,7 +580,27 @@ const TIDEWATER_JOBS: SeedJob[] = [
     noExperienceRequired: false,
     postedDaysAgo: 14,
     featuredForDays: null,
-    questions: [],
+    questions: [
+      {
+        label: "Can you overlap at least four hours a day with Istanbul time (UTC+3)?",
+        type: "yes_no",
+        required: true,
+        knockoutAnswer: "yes",
+      },
+      {
+        label: "How long have you run Node.js in production?",
+        type: "multiple_choice",
+        required: true,
+        options: ["Less than a year", "1–3 years", "More than 3 years"],
+        knockoutAnswer: null,
+      },
+      {
+        label: "Tell us about an integration you are proud of",
+        type: "long_text",
+        required: false,
+        knockoutAnswer: null,
+      },
+    ],
   },
   {
     key: "tw-designer",
@@ -568,7 +642,22 @@ const TIDEWATER_JOBS: SeedJob[] = [
     noExperienceRequired: true,
     postedDaysAgo: 4,
     featuredForDays: null,
-    questions: [],
+    questions: [
+      { label: "Link to your portfolio", type: "short_text", required: true, knockoutAnswer: null },
+      {
+        label: "Which part of the work do you enjoy most?",
+        type: "multiple_choice",
+        required: true,
+        options: ["Research", "Interaction design", "Visual design", "Prototyping"],
+        knockoutAnswer: null,
+      },
+      {
+        label: "Can you run usability sessions with customers in Turkish or English?",
+        type: "yes_no",
+        required: true,
+        knockoutAnswer: "yes",
+      },
+    ],
   },
   {
     key: "tw-intern",
@@ -822,7 +911,11 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
     daysAgo: 10,
     note: null,
     attachCv: true,
-    answers: [],
+    answers: [
+      true,
+      "Less than a year",
+      "I built my faculty's course scheduler in Django and connected it to the university's single sign-on.",
+    ],
     steps: [{ stage: "reviewed", daysAgo: 8 }],
     rating: null,
     notes: [],
@@ -833,7 +926,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
     daysAgo: 2,
     note: null,
     attachCv: true,
-    answers: [],
+    answers: [true, "1–3 years", ""],
     steps: [],
     rating: null,
     notes: [],
@@ -844,7 +937,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
     daysAgo: 3,
     note: "Happy to talk about how I would set up research with your exporters.",
     attachCv: true,
-    answers: [],
+    answers: ["https://mei-tanaka.example/case-studies", "Research", true],
     steps: [
       { stage: "reviewed", daysAgo: 2 },
       { stage: "shortlisted", daysAgo: 1, message: "Thanks, Mei. We would love to talk." },
@@ -896,7 +989,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
     daysAgo: 4,
     note: null,
     attachCv: true,
-    answers: [],
+    answers: ["https://mei-tanaka.example", true],
     steps: [{ stage: "reviewed", daysAgo: 2 }],
     rating: null,
     notes: [],

@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { formatDate } from "@/features/jobs/utils";
 import { getInitials } from "@/features/jobs/utils";
 import { getCvUrl } from "@/features/applications/actions";
+import { answerLabel } from "@/features/applications/answers";
 import { bulkSetApplicationStage } from "@/features/applications/pipeline-actions";
 import {
   APPLICATION_STAGES,
@@ -431,7 +432,7 @@ function ApplicantDrawer({
                   <div key={a.questionId}>
                     <dt className="font-medium">{a.label}</dt>
                     <dd className="mt-0.5 whitespace-pre-line text-muted-foreground">
-                      {a.type === "yes_no" ? (a.answer ? "Yes" : "No") : String(a.answer) || "—"}
+                      {answerLabel(a.answer)}
                     </dd>
                   </div>
                 ))}

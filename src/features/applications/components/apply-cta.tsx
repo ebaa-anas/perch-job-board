@@ -6,10 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/features/auth/components/auth-ui";
 import { applyToJob } from "@/features/applications/actions";
+import { initialAnswers, type AnswerValue } from "@/features/applications/answers";
+import { QuestionField } from "@/features/applications/components/question-field";
 import type { JobApplicationQuestion } from "@/features/jobs/types";
 
 type State = "guest" | "seeker" | "applied" | "owner" | "other";
@@ -104,14 +105,6 @@ export function ApplyCta({
   );
 }
 
-type AnswerValue = string | boolean;
-
-function blankAnswers(questions: JobApplicationQuestion[]): Record<string, AnswerValue> {
-  return Object.fromEntries(
-    questions.map((q) => [q.id, q.type === "yes_no" ? false : ""]),
-  );
-}
-
 function ApplyDialog({
   jobId,
   hasCv,
@@ -128,7 +121,7 @@ function ApplyDialog({
   const [note, setNote] = React.useState("");
   const [attachCv, setAttachCv] = React.useState(hasCv);
   const [answers, setAnswers] = React.useState<Record<string, AnswerValue>>(() =>
-    blankAnswers(questions),
+    initialAnswers(questions),
   );
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -246,92 +239,6 @@ function ApplyDialog({
           </Button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function QuestionField({
-  question,
-  value,
-  error,
-  onChange,
-}: {
-  question: JobApplicationQuestion;
-  value: AnswerValue | undefined;
-  error?: string;
-  onChange: (value: AnswerValue) => void;
-}) {
-  const label = (
-    <label htmlFor={`q-${question.id}`} className="text-sm font-medium">
-      {question.label}
-      {!question.required && <span className="text-muted-foreground"> (optional)</span>}
-    </label>
-  );
-
-  if (question.type === "yes_no") {
-    return (
-      <div className="space-y-1.5">
-        {label}
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-1.5">
-            <input
-              type="radio"
-              name={`q-${question.id}`}
-              checked={value === true}
-              onChange={() => onChange(true)}
-            />
-            Yes
-          </label>
-          <label className="flex items-center gap-1.5">
-            <input
-              type="radio"
-              name={`q-${question.id}`}
-              checked={value === false}
-              onChange={() => onChange(false)}
-            />
-            No
-          </label>
-        </div>
-        {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      </div>
-    );
-  }
-
-  if (question.type === "multiple_choice") {
-    return (
-      <div className="space-y-1.5">
-        {label}
-        <Select
-          id={`q-${question.id}`}
-          value={typeof value === "string" ? value : ""}
-          aria-invalid={!!error}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="" disabled>
-            Choose one…
-          </option>
-          {question.options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </Select>
-        {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-1.5">
-      {label}
-      <Textarea
-        id={`q-${question.id}`}
-        rows={question.type === "long_text" ? 4 : 2}
-        value={typeof value === "string" ? value : ""}
-        aria-invalid={!!error}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

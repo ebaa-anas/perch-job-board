@@ -374,6 +374,7 @@ export async function seedDemoData(
           label: question.label,
           type: question.type,
           required: question.required,
+          options: question.options ?? [],
           knockout_answer: question.knockoutAnswer,
           position,
         })),
@@ -400,7 +401,8 @@ export async function seedDemoData(
           questionId: question.id,
           label: question.label,
           type: question.type,
-          answer: app.answers[index] ?? (question.type === "yes_no" ? false : ""),
+          // Skipped means "", as the apply action stores it — never `false`.
+          answer: app.answers[index] ?? "",
         }));
         return {
           job_id: jobOf(app.job),
