@@ -4,7 +4,7 @@
 
 <h1 align="center">Perch</h1>
 
-<p align="center">A two-sided job board where visa sponsorship and relocation are facts you can filter on, not footnotes.</p>
+<p align="center">A two-sided job board Where people find where they land next — and where teams find who lands with them.</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-16-000000" alt="Next.js 16" />
