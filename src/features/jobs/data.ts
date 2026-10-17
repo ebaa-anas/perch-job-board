@@ -91,17 +91,25 @@ export const getPublishedJobById = cache(async (id: string): Promise<Job | null>
   return data ? mapJobRow(data as unknown as Row) : null;
 });
 
-/** The signed-in recruiter's own company id, or null. */
+/**
+ * The company the signed-in recruiter belongs to, or null.
+ *
+ * Reads `company_members`, not `companies.owner_id`: since migration 0018 an
+ * invited teammate must see the same job list the owner does. Kept local to
+ * this module (rather than importing the companies feature) so the jobs read
+ * path has no cross-feature dependency, but the semantics are identical to
+ * `getOwnCompany()`.
+ */
 const getOwnCompanyId = cache(async (): Promise<string | null> => {
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
   const { data } = await supabase
-    .from("companies")
-    .select("id")
-    .eq("owner_id", user.id)
+    .from("company_members")
+    .select("company_id")
+    .eq("profile_id", user.id)
     .maybeSingle();
-  return data?.id ?? null;
+  return data?.company_id ?? null;
 });
 
 /** Every job belonging to the recruiter's company — all statuses, newest first. */
@@ -143,7 +151,7 @@ export const getJobQuestions = cache(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("job_application_questions")
-      .select("id, label, type, required, options")
+      .select("id, label, type, required, options, knockout_answer")
       .eq("job_id", jobId)
       .order("position", { ascending: true });
     if (error) throw new Error(`getJobQuestions: ${error.message}`);
@@ -153,6 +161,7 @@ export const getJobQuestions = cache(
       type: row.type as JobApplicationQuestion["type"],
       required: row.required,
       options: row.options ?? [],
+      knockoutAnswer: row.knockout_answer,
     }));
   },
 );

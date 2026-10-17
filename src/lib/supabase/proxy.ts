@@ -5,7 +5,14 @@ import type { Database } from "@/lib/supabase/database.types";
 /** Route prefixes that require a signed-in user. Role checks (seeker-only
  *  /profile, recruiter-only /company, admin-only /admin) run in each route's
  *  layout via requireRole — not here, to keep the proxy a single auth round-trip. */
-const PROTECTED_PREFIXES = ["/dashboard", "/profile", "/company", "/admin"];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/profile",
+  "/company",
+  "/admin",
+  "/alerts",
+  "/notifications",
+];
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(

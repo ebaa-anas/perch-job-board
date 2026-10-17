@@ -91,10 +91,13 @@ beforeAll(async () => {
 afterAll(async () => {
   const svc = serviceClient();
   await svc.from("companies").delete().eq("owner_id", recruiter.id);
-  await svc.from("admin_emails").delete().eq("email", admin.email);
+  // Users before the admin_emails row: the other order leaves a moment where
+  // an admin profile exists without its listing, which the global invariant
+  // in security-hardening.integration.test.ts can observe and fail on.
   for (const id of [admin.id, recruiter.id, seeker.id, seekerB.id]) {
     if (id) await svc.auth.admin.deleteUser(id);
   }
+  await svc.from("admin_emails").delete().eq("email", admin.email);
 });
 
 describe("company_reports RLS", () => {

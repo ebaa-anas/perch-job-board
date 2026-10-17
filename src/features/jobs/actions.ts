@@ -27,13 +27,27 @@ function zodFieldErrors(issues: { path: PropertyKey[]; message: string }[]) {
   return fieldErrors;
 }
 
-async function ownCompany(supabase: Awaited<ReturnType<typeof createClient>>, ownerId: string) {
+/**
+ * The company the caller may post for, via `company_members`.
+ *
+ * Was `companies.owner_id = <caller>`; since migration 0018 every seat holder
+ * can post, so an invited recruiter resolves to their team's company. RLS
+ * still has the final say — the `jobs` insert policy calls `owns_company()`,
+ * which is now membership-based too.
+ */
+async function ownCompany(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profileId: string,
+) {
   const { data } = await supabase
-    .from("companies")
-    .select("id, slug, suspended_at")
-    .eq("owner_id", ownerId)
+    .from("company_members")
+    .select("companies!inner ( id, slug, suspended_at )")
+    .eq("profile_id", profileId)
     .maybeSingle();
-  return data;
+  const row = data as unknown as {
+    companies: { id: string; slug: string; suspended_at: string | null };
+  } | null;
+  return row?.companies ?? null;
 }
 
 const SUSPENDED_MSG =
@@ -89,6 +103,9 @@ async function replaceJobQuestions(
         type: q.type,
         required: q.required,
         options: q.options,
+        // A blank gate is not a gate; the column's check constraint rejects
+        // an empty string, so normalise it here rather than at the database.
+        knockout_answer: q.knockoutAnswer?.trim() ? q.knockoutAnswer.trim() : null,
         position,
       })),
     );

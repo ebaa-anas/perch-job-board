@@ -83,24 +83,34 @@ describe("jobs read contract", () => {
 // Depends on `npm run seed` (Task 7, Ruling 11) having populated the hosted DB:
 // one `companies` row per distinct SEED_JOBS company (14) + 14 published jobs.
 describe("seed data present", () => {
-  it("has >= 14 companies and >= 14 published jobs", async () => {
+  it("seeds companies and a populated public board", async () => {
+    // The seed contract changed: it now creates a few companies, each owned by
+    // a real recruiter account, rather than fourteen ownerless ones. The
+    // numbers below track that contract — what matters is that the public
+    // board is not empty and every company has an owner.
     const svc = serviceClient();
 
-    const { count: companyCount, error: cErr } = await svc
+    const { data: companies, error: cErr } = await svc
       .from("companies")
-      .select("id", { count: "exact", head: true });
+      .select("id, owner_id");
     expect(cErr).toBeNull();
-    expect(companyCount ?? 0).toBeGreaterThanOrEqual(14);
+    expect((companies ?? []).length).toBeGreaterThanOrEqual(3);
+
+    // The old seed left owner_id null, which meant nobody could administer the
+    // company it created. Every seeded company must now have an owner.
+    for (const company of companies ?? []) {
+      expect(company.owner_id).not.toBeNull();
+    }
 
     const { count: jobCount, error: jErr } = await svc
       .from("jobs")
       .select("id", { count: "exact", head: true })
       .eq("status", "published");
     expect(jErr).toBeNull();
-    expect(jobCount ?? 0).toBeGreaterThanOrEqual(14);
+    expect(jobCount ?? 0).toBeGreaterThanOrEqual(10);
   });
 
-  it("has a real seeded company + job (Northwind Labs)", async () => {
+  it("has a real seeded company with published jobs (Northwind Labs)", async () => {
     const svc = serviceClient();
 
     const { data: company } = await svc
@@ -110,12 +120,14 @@ describe("seed data present", () => {
       .maybeSingle();
     expect(company).not.toBeNull();
 
-    const { data: job } = await svc
+    // Asserted by relationship rather than by a hardcoded job slug: the seed
+    // derives slugs positionally, so pinning one would break every time the
+    // demo set is reordered without telling us anything useful.
+    const { count } = await svc
       .from("jobs")
-      .select("slug, status")
-      .eq("slug", "senior-frontend-engineer-northwind")
-      .maybeSingle();
-    expect(job).not.toBeNull();
-    expect((job as { status: string } | null)?.status).toBe("published");
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", company!.id)
+      .eq("status", "published");
+    expect(count ?? 0).toBeGreaterThan(0);
   });
 });

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/features/auth/session";
+import { rateLimitSubject } from "@/lib/rate-limit";
 import { reviewSchema, type ReviewValues } from "@/features/companies/schema";
 
 type Result = { ok: boolean; error?: string };
@@ -13,6 +14,9 @@ export async function upsertReview(
   values: ReviewValues,
 ): Promise<Result> {
   const profile = await requireRole("seeker");
+  if (!(await rateLimitSubject("review", profile.id))) {
+    return { ok: false, error: "You've posted several reviews just now. Try again later." };
+  }
   const parsed = reviewSchema.safeParse(values);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };

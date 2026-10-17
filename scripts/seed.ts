@@ -1,140 +1,228 @@
 /**
- * Seed the hosted Supabase `perch` database with the bundled demo data.
+ * Seed a demo data set.
  *
- * Ruling 11: one `companies` row per distinct `company` name in `SEED_JOBS`
- * (14 of them), each with a null `owner_id`, then the 14 jobs linked to their
- * company. Everything is an upsert, so the script is idempotent — safe to run
- * repeatedly.
+ * Every account is created on `@seed.perch.test`, which is what makes the whole
+ * set removable with `npm run seed:clear` before launch. Companies, jobs,
+ * applications and saved jobs all hang off those accounts through foreign keys
+ * with ON DELETE CASCADE, so clearing the accounts clears the data.
+ *
+ * Idempotent: re-running updates the same rows rather than duplicating them.
  *
  * Run: `npm run seed`
  */
-import { config } from "dotenv";
-import { createClient } from "@supabase/supabase-js";
 import { SEED_JOBS } from "../src/features/jobs/seed";
+import {
+  SEED_DOMAIN,
+  countRows,
+  db,
+  listAllUsers,
+  printCounts,
+  slugify,
+} from "./seed-common";
 
-config({ path: ".env.local" });
+/** Shared across seeded accounts; these are demo logins, not real ones. */
+const SEED_PASSWORD = "perch-demo-2026";
 
-const ADMIN_EMAIL = (
-  process.env.SEED_ADMIN_EMAIL ?? "ebaaanas789@gmail.com"
-).toLowerCase();
+const RECRUITERS = [
+  { handle: "nadia", name: "Nadia Yılmaz" },
+  { handle: "omar", name: "Omar Haddad" },
+  { handle: "sofia", name: "Sofia Marchetti" },
+];
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SEEKERS = [
+  { handle: "amir", name: "Amir Rahimi", headline: "Mobile developer, 3y", skills: ["Flutter", "Dart", "Firebase"] },
+  { handle: "lina", name: "Lina Chowdhury", headline: "Frontend engineer", skills: ["React", "TypeScript", "Next.js"] },
+  { handle: "yusuf", name: "Yusuf Demir", headline: "Recent CS graduate", skills: ["Python", "SQL"] },
+  { handle: "mei", name: "Mei Tanaka", headline: "Product designer", skills: ["Figma", "Design Systems"] },
+];
 
-if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — check .env.local",
-  );
+function emailFor(handle: string): string {
+  return `${handle}@${SEED_DOMAIN}`;
 }
 
-// Service role bypasses RLS, so inserts work despite the Phase-1
-// public-read-only policies.
-const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+/** Create the account if absent, return its id either way. */
+async function upsertUser(
+  email: string,
+  fullName: string,
+  role: "seeker" | "recruiter",
+  existing: Map<string, string>,
+): Promise<string> {
+  const found = existing.get(email.toLowerCase());
+  if (found) return found;
 
-/** lowercase, non-alphanumerics → "-", trim leading/trailing "-". */
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const { data, error } = await db.auth.admin.createUser({
+    email,
+    password: SEED_PASSWORD,
+    email_confirm: true,
+    user_metadata: { full_name: fullName, role },
+  });
+  if (error) throw new Error(`createUser ${email}: ${error.message}`);
+  return data.user.id;
 }
 
 async function main() {
-  // 1. Owner admin email (PK conflict target).
-  const { error: adminErr } = await db
-    .from("admin_emails")
-    .upsert({ email: ADMIN_EMAIL }, { onConflict: "email" });
-  if (adminErr) {
-    throw new Error(`admin_emails upsert failed: ${adminErr.message}`);
+  printCounts("Before seed:", await countRows());
+
+  const existing = new Map(
+    (await listAllUsers()).map((u) => [u.email.toLowerCase(), u.id]),
+  );
+
+  // 1. Accounts. The handle_new_user trigger creates the matching profiles row.
+  const recruiterIds = new Map<string, string>();
+  for (const r of RECRUITERS) {
+    recruiterIds.set(
+      r.handle,
+      await upsertUser(emailFor(r.handle), r.name, "recruiter", existing),
+    );
   }
 
-  // 2. One company per distinct `company` name in SEED_JOBS.
-  const companyBySlug = new Map<
-    string,
-    {
-      name: string;
-      slug: string;
-      tagline: null;
-      description: string;
-      website: null;
-      owner_id: null;
-      logo_color: string;
-    }
-  >();
-  for (const job of SEED_JOBS) {
-    const slug = slugify(job.company);
-    if (companyBySlug.has(slug)) continue;
-    companyBySlug.set(slug, {
-      name: job.company,
-      slug,
-      tagline: null,
-      description: `Open roles at ${job.company}.`,
-      website: null,
-      owner_id: null,
-      logo_color: job.companyLogoColor,
-    });
-  }
-  const companyRows = [...companyBySlug.values()];
-
-  const { data: companyData, error: cErr } = await db
-    .from("companies")
-    .upsert(companyRows, { onConflict: "slug" })
-    .select("id, slug");
-  if (cErr) throw new Error(`companies upsert failed: ${cErr.message}`);
-
-  const idBySlug = new Map<string, string>();
-  for (const row of (companyData ?? []) as Array<{ id: string; slug: string }>) {
-    idBySlug.set(row.slug, row.id);
+  const seekerIds = new Map<string, string>();
+  for (const s of SEEKERS) {
+    seekerIds.set(
+      s.handle,
+      await upsertUser(emailFor(s.handle), s.name, "seeker", existing),
+    );
   }
 
-  // 3. The 14 jobs, each linked to its company by slug → id.
-  const jobRows = SEED_JOBS.map((j) => {
-    const companyId = idBySlug.get(slugify(j.company));
-    if (!companyId) {
-      throw new Error(
-        `no company id for "${j.company}" (slug "${slugify(j.company)}")`,
-      );
-    }
-    return {
-      slug: j.id,
-      company_id: companyId,
-      title: j.title,
-      location: j.location,
-      type: j.type,
-      work_mode: j.workMode,
-      experience: j.experience,
-      salary_min: j.salaryMin,
-      salary_max: j.salaryMax,
-      currency: j.currency,
-      description: j.description,
-      responsibilities: j.responsibilities,
-      requirements: j.requirements,
-      perks: j.perks,
-      tags: j.tags,
-      status: "published" as const,
-      created_at: j.postedAt,
-      no_experience_required: j.noExperienceRequired ?? false,
-      visa_sponsorship: j.visaSponsorship ?? false,
-      language: j.language ?? "en",
-    };
-  });
+  // 2. Seeker profiles, including the 0022 matching fields so the demo shows
+  //    the parts of the product that depend on them.
+  const profiles = SEEKERS.map((s, i) => ({
+    profile_id: seekerIds.get(s.handle)!,
+    headline: s.headline,
+    location: i % 2 === 0 ? "Istanbul, Türkiye" : "Remote",
+    bio: `${s.headline}. Seeded demo account.`,
+    skills: s.skills,
+    experience: (["mid", "mid", "junior", "senior"] as const)[i],
+    no_professional_experience: s.handle === "yusuf",
+    needs_visa_sponsorship: s.handle === "amir" || s.handle === "mei",
+    work_authorization: s.handle === "yusuf" ? "student" : "citizen",
+    desired_types: ["full-time"],
+    desired_work_modes: i % 2 === 0 ? ["hybrid"] : ["remote"],
+    desired_locations: ["Istanbul"],
+  }));
+  const profileResult = await db
+    .from("seeker_profiles")
+    .upsert(profiles, { onConflict: "profile_id" });
+  if (profileResult.error) throw new Error(profileResult.error.message);
 
-  const { data: jobData, error: jErr } = await db
+  // 3. One company per recruiter, named from the bundled demo jobs.
+  const companyNames = [...new Set(SEED_JOBS.map((j) => j.company))].slice(
+    0,
+    RECRUITERS.length,
+  );
+  const companyIds = new Map<string, string>();
+  for (const [i, name] of companyNames.entries()) {
+    const recruiter = RECRUITERS[i];
+    const { data, error } = await db
+      .from("companies")
+      .upsert(
+        {
+          owner_id: recruiterIds.get(recruiter.handle)!,
+          name,
+          slug: slugify(name),
+          tagline: `${name} — seeded demo company`,
+          logo_color:
+            SEED_JOBS.find((j) => j.company === name)?.companyLogoColor ?? "#1e5f45",
+        },
+        { onConflict: "slug" },
+      )
+      .select("id")
+      .single();
+    if (error) throw new Error(`company ${name}: ${error.message}`);
+    companyIds.set(name, data.id);
+  }
+
+  // 4. Jobs, spread across the companies round-robin. Using only the jobs
+  //    whose own company name matched would leave a board with three
+  //    listings on it, which is not a demo of anything.
+  const companyIdList = [...companyIds.values()];
+  const jobRows = SEED_JOBS.map((j, i) => ({
+    company_id: companyIdList[i % companyIdList.length],
+    slug: slugify(`${j.title}-${i + 1}`),
+    title: j.title,
+    location: j.location,
+    type: j.type,
+    work_mode: j.workMode,
+    experience: j.experience,
+    salary_min: j.salaryMin,
+    salary_max: j.salaryMax,
+    currency: j.currency,
+    description: j.description,
+    responsibilities: j.responsibilities,
+    requirements: j.requirements,
+    perks: j.perks,
+    tags: j.tags,
+    status: "published",
+    visa_sponsorship: j.experience !== "lead",
+    no_experience_required: j.experience === "junior",
+  }));
+  const { data: jobs, error: jobsError } = await db
     .from("jobs")
     .upsert(jobRows, { onConflict: "slug" })
-    .select("id");
-  if (jErr) throw new Error(`jobs upsert failed: ${jErr.message}`);
+    .select("id, slug");
+  if (jobsError) throw new Error(`jobs: ${jobsError.message}`);
 
-  const jobsUpserted = (jobData ?? []).length || jobRows.length;
-  console.log(
-    `Seeded ${companyRows.length} companies + ${jobsUpserted} published jobs; ` +
-      `admin email ${ADMIN_EMAIL}.`,
+  // 5. A few applications and saved jobs, so the pipeline and dashboard are
+  //    not empty on a fresh install.
+  const seekerList = [...seekerIds.values()];
+  const applications = (jobs ?? []).slice(0, 4).flatMap((job, i) =>
+    seekerList.slice(0, 2).map((seekerId, k) => ({
+      job_id: job.id,
+      seeker_id: seekerList[(i + k) % seekerList.length],
+      note: "Seeded demo application.",
+    })),
   );
+  const seen = new Set<string>();
+  const uniqueApplications = applications.filter((a) => {
+    const key = `${a.job_id}:${a.seeker_id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (uniqueApplications.length > 0) {
+    const { error } = await db
+      .from("applications")
+      .upsert(uniqueApplications, { onConflict: "job_id,seeker_id" });
+    if (error) throw new Error(`applications: ${error.message}`);
+  }
+
+  const savedJobs = (jobs ?? []).slice(0, 3).map((job) => ({
+    seeker_id: seekerList[0],
+    job_id: job.id,
+  }));
+  if (savedJobs.length > 0) {
+    const { error } = await db
+      .from("saved_jobs")
+      .upsert(savedJobs, { onConflict: "seeker_id,job_id" });
+    if (error) throw new Error(`saved_jobs: ${error.message}`);
+  }
+
+  // 6. Admin access, only when an address is configured. No personal address
+  //    is baked into the repository.
+  const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  if (adminEmail) {
+    const { error } = await db
+      .from("admin_emails")
+      .upsert({ email: adminEmail }, { onConflict: "email" });
+    if (error) throw new Error(`admin_emails: ${error.message}`);
+    console.log(`\nAdmin access granted to ${adminEmail}`);
+  } else {
+    console.log(
+      "\nSEED_ADMIN_EMAIL not set — no admin address added. Set it in .env.local to reach /admin.",
+    );
+  }
+
+  printCounts("After seed:", await countRows());
+  console.log(
+    `\nSeeded ${RECRUITERS.length} recruiters, ${SEEKERS.length} seekers, ` +
+      `${companyIds.size} companies, ${jobs?.length ?? 0} jobs, ` +
+      `${uniqueApplications.length} applications.`,
+  );
+  console.log(`All demo accounts: <handle>@${SEED_DOMAIN} / ${SEED_PASSWORD}`);
+  console.log("Remove it all with: npm run seed:clear");
 }
 
-main().catch((err) => {
-  console.error(err);
+main().catch((error) => {
+  console.error(error);
   process.exit(1);
 });

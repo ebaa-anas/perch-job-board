@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, Menu, X } from "lucide-react";
+import { Bell, Bookmark, Menu, X } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -15,7 +15,13 @@ import { useLocale } from "@/lib/i18n/locale-provider";
 import { useSavedJobs } from "@/features/saved-jobs/saved-jobs-provider";
 import type { SessionProfile } from "@/features/auth/session";
 
-export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
+export function SiteHeader({
+  profile,
+  unreadNotifications = 0,
+}: {
+  profile: SessionProfile | null;
+  unreadNotifications?: number;
+}) {
   const pathname = usePathname();
   const { t } = useLocale();
   const { count, hydrated } = useSavedJobs();
@@ -37,6 +43,7 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
   ];
   if (isAuthed && role) nav.push({ href: "/dashboard", label: t.nav.dashboard });
   if (isSeeker) nav.push({ href: "/saved-jobs", label: t.nav.saved });
+  if (isSeeker) nav.push({ href: "/alerts", label: t.nav.alerts });
   if (role === "recruiter") nav.push({ href: "/company", label: t.nav.company });
   if (role === "admin") nav.push({ href: "/admin", label: t.nav.admin });
 
@@ -98,6 +105,24 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
             </Link>
           )}
 
+          {isAuthed && (
+            <Link
+              href="/notifications"
+              aria-label={t.nav.notificationsAria}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "icon" }),
+                "relative",
+              )}
+            >
+              <Bell className="size-[1.15rem]" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground">
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                </span>
+              )}
+            </Link>
+          )}
+
           <LocaleToggle />
           <ThemeToggle />
 
@@ -108,31 +133,30 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
               role={role ?? "seeker"}
             />
           ) : (
-            <div className="hidden items-center gap-1.5 sm:flex">
-              <Link
-                href="/login"
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-              >
-                {t.common.logIn}
-              </Link>
-              <Link href="/signup" className={buttonVariants({ size: "sm" })}>
-                {t.common.signUp}
-              </Link>
-            </div>
+            <Link
+              href="/login"
+              className={buttonVariants({ size: "sm", className: "px-3" })}
+            >
+              {t.common.logIn}
+            </Link>
           )}
 
-          <button
-            type="button"
-            aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "icon" }),
-              "sm:hidden",
+            {/* Only when it holds something: signed out, `nav` is a single
+                link the hero already surfaces. */}
+            {nav.length > 1 && (
+            <button
+              type="button"
+              aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "icon" }),
+                "sm:hidden",
+              )}
+            >
+              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
             )}
-          >
-            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
         </div>
       </div>
 
@@ -161,19 +185,6 @@ export function SiteHeader({ profile }: { profile: SessionProfile | null }) {
             ))}
           </ul>
 
-          {!isAuthed && (
-            <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-              <Link
-                href="/login"
-                className={buttonVariants({ variant: "outline", className: "w-full" })}
-              >
-                {t.common.logIn}
-              </Link>
-              <Link href="/signup" className={buttonVariants({ className: "w-full" })}>
-                {t.common.signUp}
-              </Link>
-            </div>
-          )}
         </nav>
       )}
     </header>

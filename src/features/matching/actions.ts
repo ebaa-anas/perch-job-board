@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { callClaude } from "@/lib/claude";
 import { getUser } from "@/features/auth/session";
 import { getOwnSeekerProfile } from "@/features/profiles/data";
@@ -109,7 +110,12 @@ export async function getFitScore(jobId: string): Promise<FitScoreResult> {
   const parsed = fitAssessmentSchema.safeParse(candidate);
   if (!parsed.success) return { ok: false, reason: "unavailable" };
 
-  await supabase.from("job_fit_scores").upsert({
+  // Service role, because 0014 narrowed the seeker's own policy on this table to
+  // SELECT. That is the point: the row records how much quota they have spent,
+  // so leaving it writable by them let a seeker delete it or backdate
+  // updated_at and reset the cap. `seeker_id` comes from the verified session
+  // below, never from anything the caller passed in.
+  await createAdminClient().from("job_fit_scores").upsert({
     seeker_id: user.id,
     job_id: jobId,
     input_hash: inputHash,

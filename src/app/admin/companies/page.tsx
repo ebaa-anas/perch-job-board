@@ -18,7 +18,7 @@ export default async function AdminCompaniesPage() {
         reports and to suspend or message it.
       </p>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
+      <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b border-border text-left text-xs text-muted-foreground">
             <tr>

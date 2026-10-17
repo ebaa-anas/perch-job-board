@@ -4,6 +4,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/features/auth/admin-emails";
 
 /**
  * Server-only auth/session helpers. Every export is request-scoped: the
@@ -79,6 +80,12 @@ export async function requireUser(nextPath?: string): Promise<User> {
  *   * to `/onboarding` when the user has not chosen a role yet,
  *   * to `/` when the user's role does not match.
  * Otherwise returns the profile.
+ *
+ * For `admin` the `profiles.role` column is not enough on its own. It is a
+ * cache of `admin_emails`, and a cache goes stale: someone removed from the
+ * list keeps the row until their next login, and before migration 0014 the row
+ * could be forged at signup. Since everything behind this guard runs on the
+ * service-role client, the list itself is re-checked here.
  */
 export async function requireRole(
   role: SessionRole,
@@ -90,6 +97,7 @@ export async function requireRole(
   if (!profile) redirect("/login");
   if (profile.role == null) redirect("/onboarding");
   if (profile.role !== role) redirect("/");
+  if (role === "admin" && !(await isAdminEmail(profile.email))) redirect("/");
 
   return profile;
 }

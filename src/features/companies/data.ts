@@ -54,17 +54,27 @@ function mapCompany(row: CompanyRow): Company {
   };
 }
 
-/** The signed-in recruiter's own company row, or null if they haven't made one. */
+/**
+ * The company the signed-in recruiter belongs to, or null if they belong to
+ * none.
+ *
+ * Resolved through `company_members`, not `companies.owner_id`: since
+ * migration 0018 a company can have several recruiters, and an invited member
+ * must see the same company their owner does. Membership is one-per-person, so
+ * this stays single-valued and every existing caller is unaffected.
+ */
 export const getOwnCompany = cache(async (): Promise<Company | null> => {
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
   const { data } = await supabase
-    .from("companies")
-    .select(COMPANY_COLUMNS)
-    .eq("owner_id", user.id)
+    .from("company_members")
+    .select(`companies!inner ( ${COMPANY_COLUMNS} )`)
+    .eq("profile_id", user.id)
     .maybeSingle();
-  return data ? mapCompany(data as CompanyRow) : null;
+
+  const row = (data as unknown as { companies: CompanyRow } | null)?.companies;
+  return row ? mapCompany(row) : null;
 });
 
 export const getCompanyBySlug = cache(

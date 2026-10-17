@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -92,6 +92,99 @@ export type Database = {
         }
         Relationships: []
       }
+      application_events: {
+        Row: {
+          actor_id: string | null
+          application_id: string
+          body: string | null
+          created_at: string
+          from_stage: string | null
+          id: string
+          kind: string
+          to_stage: string | null
+          visibility: string
+        }
+        Insert: {
+          actor_id?: string | null
+          application_id: string
+          body?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          kind: string
+          to_stage?: string | null
+          visibility?: string
+        }
+        Update: {
+          actor_id?: string | null
+          application_id?: string
+          body?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          kind?: string
+          to_stage?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_events_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_pipeline: {
+        Row: {
+          application_id: string
+          decided_at: string | null
+          rating: number | null
+          stage: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          application_id: string
+          decided_at?: string | null
+          rating?: number | null
+          stage?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          application_id?: string
+          decided_at?: string | null
+          rating?: number | null
+          stage?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_pipeline_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_pipeline_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           created_at: string
@@ -157,6 +250,8 @@ export type Database = {
           suspended_at: string | null
           suspended_reason: string | null
           tagline: string | null
+          verified_at: string | null
+          verified_domain: string | null
           website: string | null
         }
         Insert: {
@@ -172,6 +267,8 @@ export type Database = {
           suspended_at?: string | null
           suspended_reason?: string | null
           tagline?: string | null
+          verified_at?: string | null
+          verified_domain?: string | null
           website?: string | null
         }
         Update: {
@@ -187,12 +284,115 @@ export type Database = {
           suspended_at?: string | null
           suspended_reason?: string | null
           tagline?: string | null
+          verified_at?: string | null
+          verified_domain?: string | null
           website?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "companies_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_invites: {
+        Row: {
+          accepted_at: string | null
+          company_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "company_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_members: {
+        Row: {
+          company_id: string
+          created_at: string
+          profile_id: string
+          role: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          profile_id: string
+          role?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          profile_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "company_members_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -234,6 +434,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "company_reports_reporter_id_fkey"
@@ -287,10 +494,61 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "company_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "company_reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_application_questions: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          knockout_answer: string | null
+          label: string
+          options: string[]
+          position: number
+          required: boolean
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          knockout_answer?: string | null
+          label: string
+          options?: string[]
+          position?: number
+          required?: boolean
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          knockout_answer?: string | null
+          label?: string
+          options?: string[]
+          position?: number
+          required?: boolean
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_application_questions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -346,40 +604,25 @@ export type Database = {
           },
         ]
       }
-      job_application_questions: {
+      job_views: {
         Row: {
-          created_at: string
-          id: string
+          day: string
           job_id: string
-          label: string
-          options: string[]
-          position: number
-          required: boolean
-          type: string
+          views: number
         }
         Insert: {
-          created_at?: string
-          id?: string
+          day?: string
           job_id: string
-          label: string
-          options?: string[]
-          position?: number
-          required?: boolean
-          type: string
+          views?: number
         }
         Update: {
-          created_at?: string
-          id?: string
+          day?: string
           job_id?: string
-          label?: string
-          options?: string[]
-          position?: number
-          required?: boolean
-          type?: string
+          views?: number
         }
         Relationships: [
           {
-            foreignKeyName: "job_application_questions_job_id_fkey"
+            foreignKeyName: "job_views_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
@@ -395,6 +638,7 @@ export type Database = {
           currency: string
           description: string
           experience: string
+          featured_until: string | null
           id: string
           language: string
           location: string
@@ -420,6 +664,7 @@ export type Database = {
           currency?: string
           description: string
           experience: string
+          featured_until?: string | null
           id?: string
           language?: string
           location: string
@@ -445,6 +690,7 @@ export type Database = {
           currency?: string
           description?: string
           experience?: string
+          featured_until?: string | null
           id?: string
           language?: string
           location?: string
@@ -471,6 +717,54 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_response_rates"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          profile_id: string
+          read_at: string | null
+          title: string
+          url: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          profile_id: string
+          read_at?: string | null
+          title: string
+          url?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          profile_id?: string
+          read_at?: string | null
+          title?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -491,6 +785,27 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: string | null
+        }
+        Relationships: []
+      }
+      rate_limit_hits: {
+        Row: {
+          bucket: string
+          hit_at: string
+          id: number
+          identity: string
+        }
+        Insert: {
+          bucket: string
+          hit_at?: string
+          id?: number
+          identity: string
+        }
+        Update: {
+          bucket?: string
+          hit_at?: string
+          id?: number
+          identity?: string
         }
         Relationships: []
       }
@@ -527,45 +842,110 @@ export type Database = {
           },
         ]
       }
+      saved_searches: {
+        Row: {
+          created_at: string
+          frequency: string
+          id: string
+          label: string
+          last_run_at: string | null
+          query: string
+          seeker_id: string
+        }
+        Insert: {
+          created_at?: string
+          frequency?: string
+          id?: string
+          label: string
+          last_run_at?: string | null
+          query?: string
+          seeker_id: string
+        }
+        Update: {
+          created_at?: string
+          frequency?: string
+          id?: string
+          label?: string
+          last_run_at?: string | null
+          query?: string
+          seeker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_searches_seeker_id_fkey"
+            columns: ["seeker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seeker_profiles: {
         Row: {
           bio: string | null
           cv_filename: string | null
           cv_path: string | null
+          desired_locations: string[]
+          desired_types: string[]
+          desired_work_modes: string[]
+          experience: string | null
           github_url: string | null
           headline: string | null
           linkedin_url: string | null
           location: string | null
+          needs_visa_sponsorship: boolean | null
+          no_professional_experience: boolean | null
+          open_to_work: boolean
+          open_to_work_at: string | null
           portfolio_url: string | null
           profile_id: string
           skills: string[]
           updated_at: string
+          work_authorization: string | null
         }
         Insert: {
           bio?: string | null
           cv_filename?: string | null
           cv_path?: string | null
+          desired_locations?: string[]
+          desired_types?: string[]
+          desired_work_modes?: string[]
+          experience?: string | null
           github_url?: string | null
           headline?: string | null
           linkedin_url?: string | null
           location?: string | null
+          needs_visa_sponsorship?: boolean | null
+          no_professional_experience?: boolean | null
+          open_to_work?: boolean
+          open_to_work_at?: string | null
           portfolio_url?: string | null
           profile_id: string
           skills?: string[]
           updated_at?: string
+          work_authorization?: string | null
         }
         Update: {
           bio?: string | null
           cv_filename?: string | null
           cv_path?: string | null
+          desired_locations?: string[]
+          desired_types?: string[]
+          desired_work_modes?: string[]
+          experience?: string | null
           github_url?: string | null
           headline?: string | null
           linkedin_url?: string | null
           location?: string | null
+          needs_visa_sponsorship?: boolean | null
+          no_professional_experience?: boolean | null
+          open_to_work?: boolean
+          open_to_work_at?: string | null
           portfolio_url?: string | null
           profile_id?: string
           skills?: string[]
           updated_at?: string
+          work_authorization?: string | null
         }
         Relationships: [
           {
@@ -579,14 +959,101 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      company_response_rates: {
+        Row: {
+          company_id: string | null
+          responded_applications: number | null
+          total_applications: number | null
+        }
+        Relationships: []
+      }
+      job_view_totals: {
+        Row: {
+          job_id: string | null
+          views: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_views_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      open_candidates: {
+        Row: {
+          bio: string | null
+          headline: string | null
+          location: string | null
+          open_to_work_at: string | null
+          profile_id: string | null
+          skills: string[] | null
+        }
+        Insert: {
+          bio?: string | null
+          headline?: string | null
+          location?: string | null
+          open_to_work_at?: string | null
+          profile_id?: string | null
+          skills?: string[] | null
+        }
+        Update: {
+          bio?: string | null
+          headline?: string | null
+          location?: string | null
+          open_to_work_at?: string | null
+          profile_id?: string | null
+          skills?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seeker_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      accept_company_invite: { Args: { p_token: string }; Returns: string }
+      can_manage_company: { Args: { target: string }; Returns: boolean }
       company_suspended: { Args: { target: string }; Returns: boolean }
+      consume_rate_limit: {
+        Args: {
+          p_bucket: string
+          p_identity: string
+          p_max: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
       current_user_role: { Args: never; Returns: string }
+      has_company_seat: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      is_application_applicant: {
+        Args: { target_application: string }
+        Returns: boolean
+      }
+      is_company_member: { Args: { target: string }; Returns: boolean }
+      owns_application: {
+        Args: { target_application: string }
+        Returns: boolean
+      }
       owns_company: { Args: { target: string }; Returns: boolean }
       owns_job: { Args: { target_job: string }; Returns: boolean }
+      record_job_view: { Args: { p_job: string }; Returns: undefined }
+      seeker_applied_to_my_company: {
+        Args: { target_seeker: string }
+        Returns: boolean
+      }
+      transfer_company_ownership: {
+        Args: { p_company: string; p_to: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

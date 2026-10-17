@@ -20,6 +20,10 @@ import { HomeSearch } from "@/features/jobs/components/home-search";
 import { StatCounter } from "@/features/marketing/components/stat-counter";
 import { CategoryGrid } from "@/features/marketing/components/category-grid";
 import { Faq } from "@/features/marketing/components/faq";
+import {
+  HeroSpotlight,
+  RotatingWord,
+} from "@/features/marketing/components/hero-motion";
 import { getDictionary, interpolate } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/i18n/locale";
 
@@ -46,8 +50,9 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-editorial grain border-b border-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-14 text-center sm:px-6 sm:py-28">
+      <section className="bg-editorial grain relative overflow-hidden border-b border-border">
+        <HeroSpotlight />
+        <div className="stagger relative mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-14 text-center sm:px-6 sm:py-28">
           <Logo size={60} className="drop-shadow-sm" />
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <span className="size-1.5 rounded-full bg-primary" />
@@ -58,6 +63,9 @@ export default async function HomePage() {
           </span>
           <h1 className="font-display max-w-3xl text-4xl text-balance sm:text-6xl md:text-7xl">
             {t.home.heroTitle}
+            <span className="mt-1 block text-primary">
+              <RotatingWord words={t.home.heroRotating} />
+            </span>
           </h1>
           <p className="max-w-xl text-pretty text-muted-foreground sm:text-lg">
             {t.home.heroSubtitle}

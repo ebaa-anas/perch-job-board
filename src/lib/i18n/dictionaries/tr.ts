@@ -3,6 +3,8 @@ import type { en } from "@/lib/i18n/dictionaries/en";
 /** Turkish strings. Must match `en`'s exact shape — a missing key here is a type error. */
 export const tr: typeof en = {
   common: {
+    yes: "Evet",
+    no: "Hayır",
     signIn: "Giriş yap",
     logIn: "Giriş yap",
     signUp: "Kaydol",
@@ -18,8 +20,46 @@ export const tr: typeof en = {
     company: "Şirket",
     admin: "Yönetici",
     savedJobsAria: "Kaydedilen ilanlar",
+    alerts: "Uyarılar",
+    notificationsAria: "Bildirimler",
     openMenu: "Menüyü aç",
     closeMenu: "Menüyü kapat",
+  },
+  profile: {
+    completeness: "Profil gücü",
+    completeHint: "Bunları dolduran profiller daha fazla aramada çıkar.",
+    next: {
+      headline: "Ne iş yaptığını gösteren bir başlık ekle",
+      skills: "Rollerle eşleşmek için yeteneklerini ekle",
+      experience: "Daha fazla aramada çıkmak için deneyim seviyeni ekle",
+      workAuthorization: "Sponsorluk gerekip gerekmediğini belirt — boşa başvuruyu önler",
+      preferences: "Daha iyi uyarılar için ne aradığını seç",
+      cv: "Tek tıkla başvurmak için CV'ni yükle",
+      bio: "Öne çıkmak için kısa bir özgeçmiş ekle",
+    },
+    matching: "Eşleştirme",
+    matchingHint: "Seni rollerle eşleştirmek için kullanılır. Sadece başvurduğun işverenler görür.",
+    experience: "Deneyim seviyesi",
+    experienceNone: "Henüz profesyonel deneyimim yok",
+    experiencePlaceholder: "Belirtmek istemiyorum",
+    workAuthorization: "Çalışma izni",
+    workAuthPlaceholder: "Belirtmek istemiyorum",
+    workAuth: {
+      citizen: "Vatandaş veya daimi ikamet",
+      permit: "Çalışma iznim var",
+      student: "Öğrenci izni",
+      none: "Henüz iznim yok",
+    },
+    needsSponsorship: "İşe girmek için sponsorluğa ihtiyacım var",
+    preferences: "Ne arıyorsun",
+    desiredTypes: "İş türleri",
+    desiredWorkModes: "Çalışma şekilleri",
+    desiredLocations: "Tercih edilen yerler",
+    desiredLocationsHint: "Virgülle ayırın. En fazla beş.",
+    skillsUnknown: "Buradaki hiçbir ilan bunu istemiyor",
+    skillsDidYouMean: "Bunu mu demek istedin",
+    skillsPopular: "Şu anda en çok istenenler",
+    createAlert: "Tercihlerimden uyarı oluştur",
   },
   roles: {
     seeker: "İş arayan",
@@ -53,6 +93,7 @@ export const tr: typeof en = {
   home: {
     openRoles: "{companyCount} şirketten {jobCount} açık pozisyon",
     heroTitle: "Bir sonraki durağını bul",
+    heroRotating: ["mühendislikte", "tasarımda", "üründe", "veride", "pazarlamada"],
     heroSubtitle:
       "Ürün, tasarım ve mühendislik alanlarında iki taraflı bir iş ilanı platformu. İş arayan olarak ilanlara göz atıp başvur, ya da işveren olarak ilan ver ve başvuranları değerlendir — tek hesap, tek yer.",
     browseJobs: "İş ilanlarına göz at",

@@ -32,14 +32,33 @@ const jobPayload = {
   visaSponsorship: false,
   language: "en" as const,
   questions: [
-    { label: "What's your notice period?", type: "short_text" as const, required: true, options: [] },
-    { label: "Why do you want this role?", type: "long_text" as const, required: false, options: [] },
-    { label: "Authorized to work remotely from the EU?", type: "yes_no" as const, required: true, options: [] },
+    {
+      label: "What's your notice period?",
+      type: "short_text" as const,
+      required: true,
+      options: [],
+      knockoutAnswer: "",
+    },
+    {
+      label: "Why do you want this role?",
+      type: "long_text" as const,
+      required: false,
+      options: [],
+      knockoutAnswer: "",
+    },
+    {
+      label: "Authorized to work remotely from the EU?",
+      type: "yes_no" as const,
+      required: true,
+      options: [],
+      knockoutAnswer: "",
+    },
     {
       label: "Preferred start date",
       type: "multiple_choice" as const,
       required: true,
       options: ["Immediately", "Within 1 month", "Within 3 months"],
+      knockoutAnswer: "",
     },
   ],
 };

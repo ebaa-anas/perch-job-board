@@ -5,6 +5,11 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
   : "";
 
 const nextConfig: NextConfig = {
+  // Hides the floating dev-tools badge. It only ever renders under
+  // `next dev` and never in a production build, so this is purely for a
+  // clean local screen; compile and runtime errors are still surfaced.
+  devIndicators: false,
+
   images: {
     remotePatterns: supabaseHost
       ? [

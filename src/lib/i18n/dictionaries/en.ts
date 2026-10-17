@@ -6,6 +6,8 @@
  */
 export const en = {
   common: {
+    yes: "Yes",
+    no: "No",
     signIn: "Sign in",
     logIn: "Log in",
     signUp: "Sign up",
@@ -21,8 +23,46 @@ export const en = {
     company: "Company",
     admin: "Admin",
     savedJobsAria: "Saved jobs",
+    alerts: "Alerts",
+    notificationsAria: "Notifications",
     openMenu: "Open menu",
     closeMenu: "Close menu",
+  },
+  profile: {
+    completeness: "Profile strength",
+    completeHint: "Profiles that answer these appear in more searches.",
+    next: {
+      headline: "Add a headline so recruiters know what you do",
+      skills: "Add your skills to be matched to roles",
+      experience: "Add your experience level to appear in more searches",
+      workAuthorization: "Say whether you need visa sponsorship â it filters out dead ends",
+      preferences: "Set what you're looking for to get better alerts",
+      cv: "Upload your CV so you can apply in one click",
+      bio: "Add a short bio to stand out",
+    },
+    matching: "Matching",
+    matchingHint: "Used to match you to roles. Only employers you apply to can see this.",
+    experience: "Experience level",
+    experienceNone: "No professional experience yet",
+    experiencePlaceholder: "Prefer not to say",
+    workAuthorization: "Work authorization",
+    workAuthPlaceholder: "Prefer not to say",
+    workAuth: {
+      citizen: "Citizen or permanent resident",
+      permit: "I hold a work permit",
+      student: "Student permit",
+      none: "No permit yet",
+    },
+    needsSponsorship: "I need visa sponsorship to take a role",
+    preferences: "What you're looking for",
+    desiredTypes: "Job types",
+    desiredWorkModes: "Ways of working",
+    desiredLocations: "Preferred locations",
+    desiredLocationsHint: "Comma separated. Up to five.",
+    skillsUnknown: "Not asked for by any job here yet",
+    skillsDidYouMean: "Did you mean",
+    skillsPopular: "Most asked for right now",
+    createAlert: "Create an alert from my preferences",
   },
   roles: {
     seeker: "Job seeker",
@@ -56,6 +96,7 @@ export const en = {
   home: {
     openRoles: "{jobCount} open roles from {companyCount} companies",
     heroTitle: "Find where you land next",
+    heroRotating: ["in engineering", "in design", "in product", "in data", "in marketing"],
     heroSubtitle:
       "A two-sided job board for product, design and engineering. Browse and apply as a seeker, or post roles and review applicants as a recruiter — one account, one place.",
     browseJobs: "Browse jobs",

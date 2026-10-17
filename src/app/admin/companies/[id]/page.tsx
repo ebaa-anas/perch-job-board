@@ -98,7 +98,7 @@ export default async function AdminCompanyDetailPage({
         <h3 className="font-display text-xl">
           Jobs <span className="text-muted-foreground">({jobs.length})</span>
         </h3>
-        <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-border">
               {jobs.map((j) => (

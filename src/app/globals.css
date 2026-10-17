@@ -71,9 +71,29 @@
   --color-highlight: var(--highlight);
   --color-ring: var(--ring);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, monospace;
+  --font-display: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+
+  /*
+   * Fluid type scale.
+   *
+   * Tailwind ships one fixed size per step, so `text-4xl` was 36px on a
+   * 390px phone and 36px on a 27-inch monitor — too big in a 24rem column,
+   * too small in an 80rem one. `text-7xl` was 72px on a phone, which is
+   * roughly four words per line.
+   *
+   * Each step now interpolates between a comfortable phone size and the
+   * current desktop size, across 390px -> 1280px. Overriding the scale here
+   * means every `text-4xl` already written in 45 components becomes fluid
+   * with no component touched, and the hierarchy between steps is kept.
+   */
+  --text-2xl: clamp(1.375rem, 1.32rem + 0.23vw, 1.5rem);
+  --text-3xl: clamp(1.625rem, 1.51rem + 0.45vw, 1.875rem);
+  --text-4xl: clamp(1.875rem, 1.71rem + 0.67vw, 2.25rem);
+  --text-5xl: clamp(2.25rem, 1.92rem + 1.35vw, 3rem);
+  --text-6xl: clamp(2.5rem, 1.95rem + 2.25vw, 3.75rem);
+  --text-7xl: clamp(2.75rem, 1.98rem + 3.15vw, 4.5rem);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 0.15rem);
@@ -98,6 +118,15 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* 1.5 is a UI default, not a reading one. Job descriptions are long prose
+     and this is where most of the "uncomfortable" was coming from. */
+  line-height: 1.6;
+}
+
+/* Avoids a last line holding a single orphaned word. Ignored where
+   unsupported, so it costs nothing. */
+p {
+  text-wrap: pretty;
 }
 
 ::selection {
@@ -114,10 +143,59 @@ body {
 /* Editorial display type — large headings only */
 .font-display {
   font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: -0.015em;
-  line-height: 1.05;
+  /* A grotesque needs weight to register as a heading at all — at 400 it
+     reads as body text that happens to be large. This is not the 600 that
+     looked shouty earlier: that was a serif whose x-height already made it
+     look oversized before any weight was added. */
+  font-weight: 600;
+  /* Grotesques take tighter tracking than serifs without colliding, and
+     tightening is what stops large text looking loose and accidental. */
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  /* Lets Bricolage's optical-size axis actually redraw between phone and
+     desktop, rather than scaling one drawing up. */
+  font-optical-sizing: auto;
+  /* Splits headings into even lines instead of leaving one word stranded —
+     the cheapest thing that makes type look deliberately set. */
+  text-wrap: balance;
 }
+
+/*
+ * Pointer-tracked spotlight on the hero. One hue from the palette, never a
+ * gradient of several, and it only ever lightens — so the text contrast
+ * underneath it cannot drop below what the tokens already guarantee.
+ */
+.hero-spotlight {
+  opacity: 0;
+  transition: opacity 700ms ease;
+  background: radial-gradient(
+    22rem circle at var(--x, 50%) var(--y, 40%),
+    color-mix(in oklab, var(--color-primary) 14%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+/* Whether the spotlight shows at all is decided here rather than in JS, so it
+   is correct before hydration and the component needs no state. A coarse
+   pointer has no hover to follow; reduced motion has asked for exactly this. */
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .hero-spotlight {
+    opacity: 1;
+  }
+}
+
+/* Staggered entrance for the hero. Each child waits a little longer than the
+   one above it, so the eye is led down to the search box rather than having
+   the whole block appear at once. */
+.stagger > * {
+  animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.08s; }
+.stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.stagger > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger > *:nth-child(5) { animation-delay: 0.26s; }
+.stagger > *:nth-child(6) { animation-delay: 0.32s; }
 
 /* Single-hue wash behind hero / feature sections (no rainbow gradients) */
 .bg-editorial {
@@ -176,5 +254,10 @@ body {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* The stagger is decoration; the content is identical without it. */
+  .stagger > * {
+    animation: none;
   }
 }

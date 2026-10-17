@@ -56,7 +56,7 @@ afterAll(async () => {
 });
 
 describe("seeker_profiles round-trip", () => {
-  it("inserts, updates, and is publicly readable", async () => {
+  it("inserts, updates, and is readable only by its owner", async () => {
     const insert = await seekerClient
       .from("seeker_profiles")
       .upsert(
@@ -71,14 +71,27 @@ describe("seeker_profiles round-trip", () => {
       .eq("profile_id", seeker.id);
     expect(update.error).toBeNull();
 
-    // Public (anon) read — the SELECT policy is `using (true)`.
-    const { data } = await anonClient()
+    // The seeker reads their own row back — this is what proves the
+    // round-trip, and it is the half that must keep working.
+    const own = await seekerClient
       .from("seeker_profiles")
       .select("headline, skills")
       .eq("profile_id", seeker.id)
       .single();
-    expect(data?.headline).toBe("Mid dev");
-    expect(data?.skills).toEqual(["js", "ts"]);
+    expect(own.data?.headline).toBe("Mid dev");
+    expect(own.data?.skills).toEqual(["js", "ts"]);
+
+    // Anonymous reads nothing. This assertion previously expected the row to
+    // come back, because 0001 shipped `using (true)` on seeker_profiles and
+    // the test documented that as intended behaviour. It was not: it made
+    // every seeker's headline, location, bio, skills and cv_path readable
+    // with nothing but the anon key. 0021 replaced that policy, so the
+    // expectation is inverted here rather than the test removed.
+    const anon = await anonClient()
+      .from("seeker_profiles")
+      .select("headline, skills")
+      .eq("profile_id", seeker.id);
+    expect(anon.data ?? []).toHaveLength(0);
   });
 });
 

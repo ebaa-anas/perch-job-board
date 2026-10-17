@@ -134,7 +134,13 @@ describe("jobEditorSchema (client form shape)", () => {
 });
 
 describe("applicationQuestionSchema", () => {
-  const SHORT_TEXT = { label: "What's your notice period?", type: "short_text" as const, required: true, options: [] };
+  const SHORT_TEXT = {
+    label: "What's your notice period?",
+    type: "short_text" as const,
+    required: true,
+    options: [],
+    knockoutAnswer: "",
+  };
 
   it("accepts a valid short-text question", () => {
     expect(applicationQuestionSchema.safeParse(SHORT_TEXT).success).toBe(true);
@@ -175,10 +181,43 @@ describe("applicationQuestionSchema", () => {
         .success,
     ).toBe(true);
   });
+
+  it("accepts a yes_no screening gate", () => {
+    expect(
+      applicationQuestionSchema.safeParse({
+        ...SHORT_TEXT,
+        type: "yes_no",
+        knockoutAnswer: "yes",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects a gate whose answer is not one of the question's options", () => {
+    expect(
+      applicationQuestionSchema.safeParse({
+        ...SHORT_TEXT,
+        type: "multiple_choice",
+        options: ["One", "Two"],
+        knockoutAnswer: "Three",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a gate matching one of the options", () => {
+    expect(
+      applicationQuestionSchema.safeParse({
+        ...SHORT_TEXT,
+        type: "multiple_choice",
+        options: ["One", "Two"],
+        knockoutAnswer: "Two",
+      }).success,
+    ).toBe(true);
+  });
 });
 
 describe("applicationQuestionsSchema", () => {
   const question = (label: string) => ({
+    knockoutAnswer: "",
     label,
     type: "short_text" as const,
     required: false,

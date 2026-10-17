@@ -83,7 +83,7 @@ export function UsersTable({ users }: { users: AdminUserRow[] }) {
         </div>
       </div>
       {err && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
-      <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+      <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b border-border text-left text-xs text-muted-foreground">
             <tr>
